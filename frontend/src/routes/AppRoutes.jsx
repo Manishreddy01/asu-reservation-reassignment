@@ -5,6 +5,7 @@ import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
 import LibraryReservationsPage from '../pages/LibraryReservationsPage';
 import RecreationReservationsPage from '../pages/RecreationReservationsPage';
+import CheckInPage from '../pages/CheckInPage';
 
 /**
  * Central route map.
@@ -17,7 +18,6 @@ import RecreationReservationsPage from '../pages/RecreationReservationsPage';
  *   /app/recreation    → RecreationReservationsPage  (protected) — Block 3
  *
  * Future routes (add here as blocks are implemented):
- *   /app/checkin        → Block 5 — Check-in interface
  *   /app/notifications  → Block 6 — Notifications
  */
 export default function AppRoutes() {
@@ -50,6 +50,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <RecreationReservationsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/app/check-in"
+        element={
+          <ProtectedRoute>
+            <CheckInPage />
           </ProtectedRoute>
         }
       />

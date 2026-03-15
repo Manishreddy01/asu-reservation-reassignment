@@ -1,226 +1,534 @@
 /* ============================================================
-   Dashboard Placeholder Page (Block 0)
+   DashboardPage — Block 4
    ============================================================ */
 
-.dash-bg {
+.ds-page {
   min-height: 100vh;
   background: var(--bg);
-  display: flex;
-  flex-direction: column;
 }
 
-/* ── Top header bar ── */
-.dash-header {
+.ds-main {
+  padding: 32px 16px 64px;
+}
+
+.ds-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Welcome card ── */
+.ds-welcome {
   background: var(--asu-maroon);
-  color: var(--text-on-maroon);
-  padding: 0 24px;
-  height: 58px;
+  border-radius: var(--radius-lg);
+  padding: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  color: #fff;
+  box-shadow: var(--shadow);
 }
 
-.dash-logo-row {
+.ds-welcome-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
+  min-width: 0;
+}
+
+.ds-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
   color: var(--asu-gold);
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+  border: 2px solid rgba(255,255,255,0.25);
 }
 
-.dash-brand {
-  font-size: 1rem;
-  font-weight: 600;
+.ds-welcome-info {
+  min-width: 0;
+}
+
+.ds-welcome-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 3px;
   color: #fff;
-  letter-spacing: 0.01em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dash-logout-btn {
-  padding: 6px 16px;
+.ds-welcome-email {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.75);
+  margin: 0 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-role-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ds-role-badge--student {
+  background: rgba(255,198,39,0.25);
+  color: var(--asu-gold);
+  border: 1px solid rgba(255,198,39,0.4);
+}
+
+.ds-role-badge--admin {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
+}
+
+.ds-signout-btn {
+  padding: 8px 18px;
   background: transparent;
   color: rgba(255,255,255,0.85);
-  border: 1.5px solid rgba(255,255,255,0.40);
+  border: 1.5px solid rgba(255,255,255,0.35);
   border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 500;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.dash-logout-btn:hover {
+.ds-signout-btn:hover {
   background: rgba(255,255,255,0.12);
   color: #fff;
-  border-color: rgba(255,255,255,0.65);
+  border-color: rgba(255,255,255,0.6);
 }
 
-/* ── Gold accent strip ── */
-.dash-header::after {
-  display: none; /* handled per-card instead */
+/* ── Quick action cards ── */
+.ds-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
 }
 
-/* ── Main content card ── */
-.dash-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.dash-body {
-  flex: 1;
-  max-width: 680px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 48px 24px 64px;
-  text-align: center;
-}
-
-/* ── Avatar badge ── */
-.dash-welcome-badge {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.dash-avatar {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: var(--asu-maroon);
-  color: var(--asu-gold);
-  font-size: 1.5rem;
-  font-weight: 700;
+.ds-quick-card {
   display: flex;
   align-items: center;
-  justify-content: center;
-  letter-spacing: 0.04em;
+  gap: 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 
-/* ── Welcome text ── */
-.dash-welcome {
-  font-size: 1.75rem;
+.ds-quick-card:hover {
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: inherit;
+}
+
+.ds-quick-card--library:hover {
+  border-color: var(--asu-maroon);
+}
+
+.ds-quick-card--recreation:hover {
+  border-color: var(--asu-gold-dark);
+}
+
+.ds-quick-card--checkin:hover {
+  border-color: #059669;
+}
+
+.ds-quick-icon {
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.ds-quick-card--library .ds-quick-icon { color: var(--asu-maroon); }
+.ds-quick-card--recreation .ds-quick-icon { color: var(--asu-gold-dark); }
+.ds-quick-card--checkin .ds-quick-icon { color: #059669; }
+
+.ds-quick-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ds-quick-title {
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 6px;
-  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dash-email {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-bottom: 32px;
-}
-
-/* ── Info box ── */
-.dash-info-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--asu-gold);
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 36px;
-  font-size: 0.9rem;
+.ds-quick-sub {
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  line-height: 1.6;
 }
 
-.dash-info-box strong {
-  color: var(--asu-maroon);
+.ds-quick-arrow {
+  margin-left: auto;
+  font-size: 1.4rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-/* ── Module preview cards ── */
-.dash-modules {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-align: left;
-}
-
-.dash-module-card {
+/* ── Loading / error ── */
+.ds-state-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  padding: 40px 24px;
+  text-align: center;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.15s;
 }
 
-.dash-module-card.coming-soon {
-  opacity: 0.75;
+.ds-state-card--error {
+  border-color: var(--error-border);
+  background: var(--error-bg);
 }
 
-.dash-module-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-  line-height: 1;
-  margin-top: 2px;
-}
-
-.dash-module-title {
+.ds-state-msg {
   font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ds-state-card--error .ds-state-msg {
+  color: var(--error);
+}
+
+/* ── Generic section card ── */
+.ds-section {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.ds-section--active {
+  border-color: #6ee7b7;
+}
+
+.ds-section--muted {
+  opacity: 0.85;
+}
+
+.ds-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.ds-section--active .ds-section-head {
+  background: #ecfdf5;
+  border-bottom-color: #a7f3d0;
+}
+
+.ds-section-icon {
+  color: var(--text-secondary);
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.ds-section--active .ds-section-icon {
+  color: var(--success);
+}
+
+.ds-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ds-section--active .ds-section-title {
+  color: var(--success);
+}
+
+.ds-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  background: var(--asu-maroon);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 6px;
+}
+
+.ds-section--active .ds-section-count {
+  background: var(--success);
+}
+
+.ds-section-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--asu-maroon);
+  background: #fdf5f8;
+  border: 1px solid #f0c4d2;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.ds-section-body {
+  padding: 4px 0;
+}
+
+/* ── Empty state ── */
+.ds-empty {
+  padding: 20px 20px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.ds-empty a {
+  color: var(--asu-maroon);
+  text-decoration: none;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.ds-empty a:hover {
+  text-decoration: underline;
+}
+
+/* ── Reservation / generic row ── */
+.ds-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ds-row:last-child {
+  border-bottom: none;
+}
+
+.ds-row--active {
+  background: #f0fdf4;
+}
+
+.ds-row--offered {
+  background: #fffbeb;
+}
+
+.ds-row--muted {
+  opacity: 0.7;
+}
+
+.ds-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ds-row-name {
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dash-module-desc {
-  font-size: 0.85rem;
+.ds-row-meta {
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  margin: 0 0 6px;
+}
+
+.ds-row-offer-note {
+  font-size: 0.78rem;
+  color: #92400e;
+  font-weight: 600;
+}
+
+/* ── Status badges ── */
+.ds-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ds-status--upcoming {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ds-status--active {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.ds-status--offered {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ds-status--neutral {
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.ds-status--warn {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+/* ── Notification row ── */
+.ds-notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ds-notif-row:last-child {
+  border-bottom: none;
+}
+
+.ds-notif-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ds-notif-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ds-notif-type {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--asu-maroon);
+  background: #fdf5f8;
+  border: 1px solid #f0c4d2;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.ds-notif-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ds-notif-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 3px;
+}
+
+.ds-notif-msg {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin: 0;
   line-height: 1.5;
 }
 
-.dash-module-badge {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
+.ds-notif-read-btn {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
   background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 2px 7px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.dash-module-badge--active {
-  color: var(--asu-maroon);
-  background: #fdf5f8;
-  border-color: var(--asu-maroon);
-}
-
-.dash-module-card--link {
-  text-decoration: none;
-  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-secondary);
   cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: 2px;
 }
 
-.dash-module-card--link:hover {
-  box-shadow: var(--shadow);
+.ds-notif-read-btn:hover:not(:disabled) {
   border-color: var(--asu-maroon);
-  text-decoration: none;
+  color: var(--asu-maroon);
 }
 
-/* ── Mobile ── */
-@media (max-width: 480px) {
-  .dash-body {
-    padding: 32px 16px 48px;
+.ds-notif-read-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .ds-main { padding: 16px 12px 48px; }
+  .ds-inner { gap: 14px; }
+
+  .ds-welcome {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
   }
 
-  .dash-welcome {
-    font-size: 1.4rem;
+  .ds-signout-btn {
+    width: 100%;
+    text-align: center;
   }
 
-  .dash-brand {
-    font-size: 0.9rem;
+  .ds-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-quick-title {
+    white-space: normal;
+  }
+
+  .ds-welcome-name {
+    font-size: 1.05rem;
   }
 }
