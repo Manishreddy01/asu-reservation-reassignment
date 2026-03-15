@@ -192,6 +192,24 @@
   text-transform: uppercase;
 }
 
+.dash-module-badge--active {
+  color: var(--asu-maroon);
+  background: #fdf5f8;
+  border-color: var(--asu-maroon);
+}
+
+.dash-module-card--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dash-module-card--link:hover {
+  box-shadow: var(--shadow);
+  border-color: var(--asu-maroon);
+  text-decoration: none;
+}
+
 /* ── Mobile ── */
 @media (max-width: 480px) {
   .dash-body {

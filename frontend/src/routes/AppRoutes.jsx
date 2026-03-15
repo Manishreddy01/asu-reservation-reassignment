@@ -3,17 +3,18 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import DashboardPage from '../pages/DashboardPage';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
+import LibraryReservationsPage from '../pages/LibraryReservationsPage';
 
 /**
  * Central route map.
  *
  * Current routes:
- *   /           → LandingPage   (public)
- *   /login      → LoginPage     (public, redirects to /app if already logged in)
- *   /app        → DashboardPage (protected)
+ *   /               → LandingPage              (public)
+ *   /login          → LoginPage                (public, redirects to /app if already logged in)
+ *   /app            → DashboardPage            (protected)
+ *   /app/library    → LibraryReservationsPage  (protected) — Block 2
  *
  * Future routes (add here as blocks are implemented):
- *   /app/library      → Block 2 — Library reservation module
  *   /app/recreation   → Block 3 — Recreation court module
  *   /app/checkin      → Block 5 — Check-in interface
  *   /app/notifications → Block 6 — Notifications
@@ -30,6 +31,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/app/library"
+        element={
+          <ProtectedRoute>
+            <LibraryReservationsPage />
           </ProtectedRoute>
         }
       />

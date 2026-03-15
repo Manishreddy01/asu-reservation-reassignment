@@ -5,14 +5,15 @@ import './LandingPage.css';
 
 export default function LandingPage() {
   const { user } = useAuth();
-  const appPath = user ? '/app' : '/login';
+  const appPath     = user ? '/app'         : '/login';
+  const libraryPath = user ? '/app/library' : '/login';
 
   return (
     <div className="landing">
       <Navbar />
 
       <HeroSection   appPath={appPath} />
-      <ServicesSection appPath={appPath} />
+      <ServicesSection appPath={appPath} libraryPath={libraryPath} />
       <HowItWorksSection />
       <BenefitsSection />
       <LandingFooter />
@@ -58,7 +59,7 @@ function HeroSection({ appPath }) {
 /* ─────────────────────────────────────────────────────────────────
    Services
 ───────────────────────────────────────────────────────────────── */
-function ServicesSection({ appPath }) {
+function ServicesSection({ appPath, libraryPath }) {
   return (
     <section className="services">
       <div className="section-inner">
@@ -76,7 +77,7 @@ function ServicesSection({ appPath }) {
             location="Hayden Library"
             description="Reserve quiet, equipped study rooms for individual or group sessions. Rooms come with whiteboards, TV screens, and HDMI connections."
             features={['4 rooms available', 'Capacity 2–8 people', 'Equipment included']}
-            appPath={appPath}
+            appPath={libraryPath}
             label="Reserve a Study Room"
           />
           <ServiceCard

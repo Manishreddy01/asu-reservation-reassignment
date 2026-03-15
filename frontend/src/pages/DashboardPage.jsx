@@ -4,7 +4,7 @@
  * This is a minimal protected page that proves the login flow works.
  * It will be replaced by the real student dashboard in Block 4.
  */
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './DashboardPage.css';
 
@@ -59,7 +59,7 @@ export default function DashboardPage() {
               icon="📚"
               title="Library Study Rooms"
               description="Browse and reserve rooms in Hayden Library."
-              coming
+              to="/app/library"
             />
             <ModuleCard
               icon="🏸"
@@ -81,15 +81,30 @@ export default function DashboardPage() {
   );
 }
 
-function ModuleCard({ icon, title, description, coming }) {
-  return (
-    <div className={`dash-module-card${coming ? ' coming-soon' : ''}`}>
+function ModuleCard({ icon, title, description, coming, to }) {
+  const inner = (
+    <>
       <span className="dash-module-icon">{icon}</span>
       <div>
         <h3 className="dash-module-title">{title}</h3>
         <p className="dash-module-desc">{description}</p>
         {coming && <span className="dash-module-badge">Coming soon</span>}
+        {to && <span className="dash-module-badge dash-module-badge--active">Open →</span>}
       </div>
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className="dash-module-card dash-module-card--link">
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={`dash-module-card${coming ? ' coming-soon' : ''}`}>
+      {inner}
     </div>
   );
 }
