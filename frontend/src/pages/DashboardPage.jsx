@@ -237,6 +237,7 @@ export default function DashboardPage() {
                 count={notifications.length}
                 badge={notifications.length > 0 ? `${notifications.length} unread` : null}
                 icon={<BellIcon />}
+                footer={<Link to="/app/notifications" className="ds-section-footer-link">View all notifications →</Link>}
               >
                 {notifications.length === 0 ? (
                   <EmptyState>All caught up — no unread notifications.</EmptyState>
@@ -272,7 +273,7 @@ export default function DashboardPage() {
 /* ─────────────────────────────────────────────────────────────────
    Section wrapper
 ───────────────────────────────────────────────────────────────── */
-function DashSection({ title, count, badge, accent, muted, icon, children }) {
+function DashSection({ title, count, badge, accent, muted, icon, footer, children }) {
   return (
     <section
       className={[
@@ -288,6 +289,7 @@ function DashSection({ title, count, badge, accent, muted, icon, children }) {
         {badge  && <span className="ds-section-badge">{badge}</span>}
       </header>
       <div className="ds-section-body">{children}</div>
+      {footer && <div className="ds-section-footer">{footer}</div>}
     </section>
   );
 }

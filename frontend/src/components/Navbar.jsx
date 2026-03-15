@@ -18,6 +18,9 @@ export default function Navbar() {
         {/* Actions */}
         <nav className="navbar-actions">
           <Link to="/" className="navbar-link">Home</Link>
+          {user && (
+            <Link to="/app/notifications" className="navbar-link">Notifications</Link>
+          )}
           {user ? (
             <Link to="/app" className="navbar-cta">
               Go to App

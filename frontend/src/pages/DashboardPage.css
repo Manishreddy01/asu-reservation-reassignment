@@ -310,6 +310,23 @@
   padding: 4px 0;
 }
 
+.ds-section-footer {
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.ds-section-footer-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--asu-maroon);
+  text-decoration: none;
+}
+
+.ds-section-footer-link:hover {
+  text-decoration: underline;
+}
+
 /* ── Empty state ── */
 .ds-empty {
   padding: 20px 20px;
