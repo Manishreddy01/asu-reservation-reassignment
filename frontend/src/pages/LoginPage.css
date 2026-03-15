@@ -1,0 +1,213 @@
+/* ============================================================
+   Login Page
+   ============================================================ */
+
+/* Full-screen background */
+.login-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background:
+    /* subtle top-left maroon glow */
+    radial-gradient(ellipse 60% 40% at 0% 0%, rgba(140, 29, 64, 0.12) 0%, transparent 70%),
+    /* subtle bottom-right gold glow */
+    radial-gradient(ellipse 50% 35% at 100% 100%, rgba(255, 198, 39, 0.10) 0%, transparent 70%),
+    var(--bg);
+}
+
+/* Card */
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+/* ── Header band ── */
+.login-header {
+  background: var(--asu-maroon);
+  color: var(--text-on-maroon);
+  padding: 32px 36px 28px;
+  text-align: center;
+}
+
+.login-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.login-fork-icon {
+  width: 28px;
+  height: 32px;
+  color: var(--asu-gold);
+}
+
+.login-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--asu-gold);
+  letter-spacing: 0.06em;
+}
+
+.login-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.login-subtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Divider ── */
+.login-divider {
+  height: 3px;
+  background: linear-gradient(90deg, var(--asu-gold) 0%, var(--asu-gold-dark) 100%);
+}
+
+/* ── Form area ── */
+.login-form {
+  padding: 32px 36px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Error alert */
+.login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: var(--radius);
+  color: var(--error);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Field group */
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.login-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.login-input::placeholder {
+  color: var(--text-muted);
+}
+
+.login-input:focus {
+  border-color: var(--asu-maroon);
+  box-shadow: 0 0 0 3px rgba(140, 29, 64, 0.12);
+  background: var(--surface);
+}
+
+.login-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Submit button */
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--asu-maroon);
+  color: var(--text-on-maroon);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  min-height: 46px;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: var(--asu-maroon-dark);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.login-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.login-spinner {
+  width: 20px;
+  height: 20px;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Footer note */
+.login-footer {
+  padding: 0 36px 24px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .login-card {
+    border-radius: var(--radius-lg);
+  }
+
+  .login-header {
+    padding: 24px 24px 20px;
+  }
+
+  .login-form {
+    padding: 24px 24px 20px;
+  }
+
+  .login-footer {
+    padding: 0 24px 20px;
+  }
+}

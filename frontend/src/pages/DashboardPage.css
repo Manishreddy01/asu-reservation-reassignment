@@ -1,0 +1,208 @@
+/* ============================================================
+   Dashboard Placeholder Page (Block 0)
+   ============================================================ */
+
+.dash-bg {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top header bar ── */
+.dash-header {
+  background: var(--asu-maroon);
+  color: var(--text-on-maroon);
+  padding: 0 24px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+
+.dash-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--asu-gold);
+}
+
+.dash-brand {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.dash-logout-btn {
+  padding: 6px 16px;
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(255,255,255,0.40);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.dash-logout-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border-color: rgba(255,255,255,0.65);
+}
+
+/* ── Gold accent strip ── */
+.dash-header::after {
+  display: none; /* handled per-card instead */
+}
+
+/* ── Main content card ── */
+.dash-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-body {
+  flex: 1;
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+  text-align: center;
+}
+
+/* ── Avatar badge ── */
+.dash-welcome-badge {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.dash-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--asu-maroon);
+  color: var(--asu-gold);
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Welcome text ── */
+.dash-welcome {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.dash-email {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+/* ── Info box ── */
+.dash-info-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--asu-gold);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 36px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.dash-info-box strong {
+  color: var(--asu-maroon);
+}
+
+/* ── Module preview cards ── */
+.dash-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.dash-module-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s;
+}
+
+.dash-module-card.coming-soon {
+  opacity: 0.75;
+}
+
+.dash-module-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.dash-module-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.dash-module-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.dash-module-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .dash-body {
+    padding: 32px 16px 48px;
+  }
+
+  .dash-welcome {
+    font-size: 1.4rem;
+  }
+
+  .dash-brand {
+    font-size: 0.9rem;
+  }
+}

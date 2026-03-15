@@ -1,0 +1,104 @@
+/* ============================================================
+   Navbar — shared top navigation bar
+   ============================================================ */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.navbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* ── Logo ── */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--asu-maroon);
+  flex-shrink: 0;
+}
+
+.navbar-logo:hover {
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.navbar-fork {
+  width: 20px;
+  height: 23px;
+  color: var(--asu-maroon);
+  flex-shrink: 0;
+}
+
+.navbar-logo-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--asu-maroon);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* ── Right-side actions ── */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.navbar-link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.navbar-link:hover {
+  color: var(--asu-maroon);
+  text-decoration: none;
+}
+
+/* CTA button */
+.navbar-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 18px;
+  background: var(--asu-maroon);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.navbar-cta:hover {
+  background: var(--asu-maroon-dark);
+  text-decoration: none;
+}
+
+/* ── Mobile ── */
+@media (max-width: 520px) {
+  .navbar-link {
+    display: none;
+  }
+
+  .navbar-logo-text {
+    font-size: 0.875rem;
+  }
+}
