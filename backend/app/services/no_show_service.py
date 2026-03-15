@@ -31,12 +31,11 @@ Resilience:
 import datetime as dt
 from sqlalchemy.orm import Session
 
-from app.models.email_log import EmailLog, EmailStatus
-from app.models.notification import Notification
 from app.models.reservation import Reservation, ReservationStatus
 from app.models.resource import Resource
 from app.models.user import User
 from app.schemas.no_show import NoShowProcessResponse, NoShowResult
+from app.services.messaging_service import send_event
 
 
 def process_no_shows(db: Session) -> NoShowProcessResponse:
@@ -78,44 +77,8 @@ def process_no_shows(db: Session) -> NoShowProcessResponse:
         reservation.status = ReservationStatus.released
         db.add(reservation)
 
-        # ── Format readable slot info for messages ───────────────────────────
-        # Use portable strftime codes (%B %d, %H:%M) — %-d and %-I are Unix-only.
-        slot_date = reservation.reservation_date.strftime("%A, %B %d")
-        slot_time = reservation.start_time.strftime("%H:%M")
-
-        # ── In-app notification ──────────────────────────────────────────────
-        notification = Notification(
-            user_id=user.id,
-            notification_type="no_show",
-            title="Reservation Missed — Slot Released",
-            message=(
-                f"Your reservation for {resource.name} on {slot_date} at {slot_time} "
-                f"was not checked in before the deadline. "
-                f"The slot has been released and may be offered to another student."
-            ),
-            is_read=False,
-        )
-        db.add(notification)
-
-        # ── Mock email log ───────────────────────────────────────────────────
-        email = EmailLog(
-            user_id=user.id,
-            to_address=user.email,
-            subject=f"Missed Check-In: Your {resource.name} Reservation Has Been Released",
-            body=(
-                f"Hi {user.full_name},\n\n"
-                f"We noticed you did not check in for your reservation:\n\n"
-                f"  Resource : {resource.name}\n"
-                f"  Date     : {slot_date}\n"
-                f"  Time     : {slot_time}\n\n"
-                f"Because the check-in window has passed, your reservation has been "
-                f"released and may be reassigned to another student on the waitlist.\n\n"
-                f"If you believe this is an error, please contact ASU support.\n\n"
-                f"— ASU Reservation System"
-            ),
-            status=EmailStatus.sent,
-        )
-        db.add(email)
+        # ── Notification + email via centralized messaging service ───────────
+        send_event(db, "no_show", user, resource, reservation)
 
         processed.append(
             NoShowResult(

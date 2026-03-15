@@ -16,6 +16,7 @@ from app.models.reservation import Reservation, ReservationStatus
 from app.models.resource import Resource
 from app.models.user import User
 from app.schemas.reservation import ReservationCreate
+from app.services.messaging_service import send_event
 
 AZ = ZoneInfo("America/Phoenix")
 
@@ -122,8 +123,12 @@ def create_reservation(db: Session, data: ReservationCreate) -> Reservation:
         check_in_deadline=check_in_deadline,
         checked_in_at=None,
     )
-
     db.add(reservation)
+
+    # ── Confirmation notification + email ───────────────────────────────────
+    # Committed in the same transaction so the event is atomic with the booking.
+    send_event(db, "reservation_confirmed", user, resource, reservation)
+
     db.commit()
     db.refresh(reservation)
     return reservation

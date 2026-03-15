@@ -32,8 +32,6 @@ from sqlalchemy.orm import Session
 
 from app.models.building import Building
 from app.models.check_in_log import CheckInLog
-from app.models.email_log import EmailLog, EmailStatus
-from app.models.notification import Notification
 from app.models.reservation import Reservation, ReservationStatus
 from app.models.resource import Resource
 from app.models.user import User
@@ -47,6 +45,7 @@ from app.schemas.waitlist_process import (
     ProcessOffersResponse,
 )
 from app.services.geofence import check_geofence
+from app.services.messaging_service import send_event
 
 _OFFER_WINDOW_MINUTES = 5
 
@@ -136,41 +135,10 @@ def _issue_offer(
     entry.offer_expires_at = expires_at
     db.add(entry)
 
-    slot_date = reservation.reservation_date.strftime("%A, %B %d")
-    slot_time = reservation.start_time.strftime("%H:%M")
-
-    notification = Notification(
-        user_id=user.id,
-        notification_type="waitlist_offer",
-        title="You Have a Waitlist Offer!",
-        message=(
-            f"A slot has opened for {resource.name} on {slot_date} at {slot_time}. "
-            f"You have {_OFFER_WINDOW_MINUTES} minutes to claim it. "
-            f"Open the app and check in to confirm your spot."
-        ),
-        is_read=False,
+    send_event(
+        db, "waitlist_offer", user, resource, reservation,
+        offer_window_minutes=_OFFER_WINDOW_MINUTES,
     )
-    db.add(notification)
-
-    email = EmailLog(
-        user_id=user.id,
-        to_address=user.email,
-        subject=f"Waitlist Offer: {resource.name} on {slot_date} at {slot_time}",
-        body=(
-            f"Hi {user.full_name},\n\n"
-            f"Good news — a reservation slot has become available:\n\n"
-            f"  Resource : {resource.name}\n"
-            f"  Date     : {slot_date}\n"
-            f"  Time     : {slot_time}\n\n"
-            f"You have {_OFFER_WINDOW_MINUTES} minutes to claim this slot. "
-            f"Open the ASU Reservation app and check in from the building to confirm.\n\n"
-            f"If you do not claim it within the window, the offer will move to the next "
-            f"student on the waitlist.\n\n"
-            f"— ASU Reservation System"
-        ),
-        status=EmailStatus.sent,
-    )
-    db.add(email)
 
     return OfferResult(
         waitlist_entry_id=entry.id,
@@ -490,39 +458,8 @@ def claim_reservation(db: Session, data: ClaimRequest) -> ClaimResponse:
     )
     db.add(log)
 
-    # 6d. Success notification + email.
-    slot_date = reservation.reservation_date.strftime("%A, %B %d")
-    slot_time = reservation.start_time.strftime("%H:%M")
-
-    notification = Notification(
-        user_id=data.user_id,
-        notification_type="reassignment_success",
-        title="Reservation Confirmed!",
-        message=(
-            f"You have successfully claimed the waitlist slot for "
-            f"{resource.name} on {slot_date} at {slot_time}. "
-            f"Your reservation is now active. Enjoy!"
-        ),
-        is_read=False,
-    )
-    db.add(notification)
-
-    email = EmailLog(
-        user_id=data.user_id,
-        to_address=user.email,
-        subject=f"Reservation Confirmed: {resource.name} on {slot_date}",
-        body=(
-            f"Hi {user.full_name},\n\n"
-            f"Your waitlist claim was successful! Here are your reservation details:\n\n"
-            f"  Resource : {resource.name}\n"
-            f"  Date     : {slot_date}\n"
-            f"  Time     : {slot_time}\n\n"
-            f"You are checked in. Have a great session!\n\n"
-            f"— ASU Reservation System"
-        ),
-        status=EmailStatus.sent,
-    )
-    db.add(email)
+    # 6d. Success notification + email via centralized messaging service.
+    send_event(db, "reassignment_success", user, resource, reservation)
 
     # 6e. Remove remaining active queue entries for this slot.
     #     This prevents the system from issuing further offers for a slot
