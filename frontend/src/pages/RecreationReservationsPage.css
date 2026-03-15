@@ -1,0 +1,378 @@
+/* ============================================================
+   RecreationReservationsPage — Block 3
+   Visually mirrors LibraryReservationsPage with rec-* classes
+   and a gold accent to differentiate the SDFC module.
+   ============================================================ */
+
+.rec-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.rec-main {
+  padding: 32px 16px 64px;
+}
+
+.rec-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ── Breadcrumb ── */
+.rec-breadcrumb {
+  margin-bottom: 20px;
+}
+
+.rec-back-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.rec-back-link:hover {
+  color: var(--asu-maroon);
+  text-decoration: none;
+}
+
+/* ── Page header ── */
+.rec-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.rec-header-icon {
+  color: var(--asu-gold-dark);
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.rec-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--asu-maroon);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+
+.rec-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Selectors panel ── */
+.rec-selectors {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+
+.rec-selector-row {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rec-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* Date input */
+.rec-date-input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.15s;
+  max-width: 200px;
+}
+
+.rec-date-input:focus {
+  outline: none;
+  border-color: var(--asu-gold-dark);
+}
+
+/* Time slot buttons */
+.rec-time-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rec-time-btn {
+  padding: 7px 15px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.rec-time-btn:hover {
+  border-color: var(--asu-gold-dark);
+  color: var(--asu-gold-dark);
+  background: #fffbf0;
+}
+
+.rec-time-btn--active {
+  background: var(--asu-maroon);
+  border-color: var(--asu-maroon);
+  color: #fff;
+}
+
+.rec-time-btn--active:hover {
+  background: var(--asu-maroon-dark);
+  border-color: var(--asu-maroon-dark);
+  color: #fff;
+}
+
+/* ── Prompt banner ── */
+.rec-prompt-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  color: #92400e;
+  margin-bottom: 24px;
+}
+
+/* ── Legend ── */
+.rec-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* ── Loading / state messages ── */
+.rec-availability-loading {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.rec-state-msg {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.rec-state-msg--error {
+  color: var(--error);
+}
+
+/* ── Courts grid ── */
+.rec-courts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* ── Court card ── */
+.rec-court-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.rec-court-card:hover {
+  box-shadow: var(--shadow);
+}
+
+.rec-court-card--occupied {
+  border-color: #fca5a5;
+  background: #fff9f9;
+}
+
+.rec-court-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rec-court-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.rec-court-capacity {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.rec-court-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rec-court-features li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.rec-court-features li svg {
+  color: var(--asu-gold-dark);
+  flex-shrink: 0;
+}
+
+/* ── Status badges ── */
+.rec-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rec-badge--available {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.rec-badge--occupied {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.rec-badge--yours {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* ── Action area ── */
+.rec-court-actions {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rec-btn {
+  width: 100%;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  text-align: center;
+}
+
+.rec-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rec-btn--reserve {
+  background: var(--asu-maroon);
+  color: #fff;
+}
+
+.rec-btn--reserve:hover:not(:disabled) {
+  background: var(--asu-maroon-dark);
+}
+
+.rec-btn--waitlist {
+  background: transparent;
+  color: var(--asu-maroon);
+  border: 1.5px solid var(--asu-maroon);
+}
+
+.rec-btn--waitlist:hover:not(:disabled) {
+  background: #fdf5f8;
+}
+
+.rec-action-note {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 6px 0;
+}
+
+/* ── Feedback messages ── */
+.rec-feedback {
+  font-size: 0.83rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
+}
+
+.rec-feedback--success {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid #a7f3d0;
+}
+
+.rec-feedback--error {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid var(--error-border);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .rec-main { padding: 20px 12px 48px; }
+  .rec-title { font-size: 1.4rem; }
+  .rec-header { flex-wrap: wrap; }
+  .rec-courts-grid { grid-template-columns: 1fr; }
+  .rec-date-input { max-width: 100%; width: 100%; }
+}

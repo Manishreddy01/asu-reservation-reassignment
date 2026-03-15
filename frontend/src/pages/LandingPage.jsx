@@ -5,15 +5,16 @@ import './LandingPage.css';
 
 export default function LandingPage() {
   const { user } = useAuth();
-  const appPath     = user ? '/app'         : '/login';
-  const libraryPath = user ? '/app/library' : '/login';
+  const appPath        = user ? '/app'            : '/login';
+  const libraryPath    = user ? '/app/library'    : '/login';
+  const recreationPath = user ? '/app/recreation' : '/login';
 
   return (
     <div className="landing">
       <Navbar />
 
       <HeroSection   appPath={appPath} />
-      <ServicesSection appPath={appPath} libraryPath={libraryPath} />
+      <ServicesSection appPath={appPath} libraryPath={libraryPath} recreationPath={recreationPath} />
       <HowItWorksSection />
       <BenefitsSection />
       <LandingFooter />
@@ -59,7 +60,7 @@ function HeroSection({ appPath }) {
 /* ─────────────────────────────────────────────────────────────────
    Services
 ───────────────────────────────────────────────────────────────── */
-function ServicesSection({ appPath, libraryPath }) {
+function ServicesSection({ appPath, libraryPath, recreationPath }) {
   return (
     <section className="services">
       <div className="section-inner">
@@ -87,7 +88,7 @@ function ServicesSection({ appPath, libraryPath }) {
             location="SDFC Recreation Center"
             description="Book badminton courts at the Sun Devil Fitness Complex. Nets and shuttlecocks are provided on site."
             features={['4 courts available', 'Capacity up to 4 players', 'Equipment provided']}
-            appPath={appPath}
+            appPath={recreationPath}
             label="Reserve a Court"
           />
         </div>

@@ -6,15 +6,15 @@ import { fetchBuildings, fetchResources } from '../api/resources';
 import { fetchReservations, createReservation } from '../api/reservations';
 import { fetchWaitlists, joinWaitlist } from '../api/waitlists';
 import { TIME_SLOTS, OCCUPYING, ACTIVE_WAITLIST, todayString } from '../utils/reservationSlots';
-import './LibraryReservationsPage.css';
+import './RecreationReservationsPage.css';
 
-export default function LibraryReservationsPage() {
+export default function RecreationReservationsPage() {
   const { user } = useAuth();
 
-  // Rooms (static after mount)
-  const [rooms, setRooms] = useState([]);
-  const [loadingRooms, setLoadingRooms] = useState(true);
-  const [roomsError, setRoomsError] = useState(null);
+  // Courts (static after mount)
+  const [courts, setCourts] = useState([]);
+  const [loadingCourts, setLoadingCourts] = useState(true);
+  const [courtsError, setCourtsError] = useState(null);
 
   // Date / time selection
   const [selectedDate, setSelectedDate] = useState('');
@@ -25,30 +25,30 @@ export default function LibraryReservationsPage() {
   const [userWaitlists, setUserWaitlists] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // Per-room action state: { [roomId]: { loading, message, type } }
+  // Per-court action state: { [courtId]: { loading, message, type } }
   const [actions, setActions] = useState({});
 
-  // Load the library building and its study rooms on mount
+  // Load the SDFC building and its courts on mount
   useEffect(() => {
-    async function loadRooms() {
-      setLoadingRooms(true);
-      setRoomsError(null);
+    async function loadCourts() {
+      setLoadingCourts(true);
+      setCourtsError(null);
       try {
         const buildings = await fetchBuildings();
-        const library = buildings.find(b => b.name.toLowerCase().includes('library'));
-        if (!library) throw new Error('Library building not found in the system.');
+        const sdfc = buildings.find(b => b.name.toLowerCase().includes('sdfc'));
+        if (!sdfc) throw new Error('Recreation building not found in the system.');
         const resources = await fetchResources({
-          buildingId: library.id,
-          resourceType: 'study_room',
+          buildingId: sdfc.id,
+          resourceType: 'recreation_court',
         });
-        setRooms(resources);
+        setCourts(resources);
       } catch (e) {
-        setRoomsError(e.message);
+        setCourtsError(e.message);
       } finally {
-        setLoadingRooms(false);
+        setLoadingCourts(false);
       }
     }
-    loadRooms();
+    loadCourts();
   }, []);
 
   // Reload slot data whenever date + time both change
@@ -81,31 +81,31 @@ export default function LibraryReservationsPage() {
 
   // ── Availability helpers ─────────────────────────────────────────
 
-  function isOccupied(roomId) {
+  function isOccupied(courtId) {
     return allReservations.some(
       r =>
-        r.resource_id === roomId &&
+        r.resource_id === courtId &&
         r.reservation_date === selectedDate &&
         r.start_time === selectedTime &&
         OCCUPYING.has(r.status),
     );
   }
 
-  function isUserReserved(roomId) {
+  function isUserReserved(courtId) {
     return allReservations.some(
       r =>
         r.user_id === user.id &&
-        r.resource_id === roomId &&
+        r.resource_id === courtId &&
         r.reservation_date === selectedDate &&
         r.start_time === selectedTime &&
         OCCUPYING.has(r.status),
     );
   }
 
-  function isUserWaitlisted(roomId) {
+  function isUserWaitlisted(courtId) {
     return userWaitlists.some(
       w =>
-        w.resource_id === roomId &&
+        w.resource_id === courtId &&
         w.reservation_date === selectedDate &&
         w.start_time === selectedTime &&
         ACTIVE_WAITLIST.has(w.status),
@@ -114,20 +114,20 @@ export default function LibraryReservationsPage() {
 
   // ── Action handlers ──────────────────────────────────────────────
 
-  function setRoomAction(roomId, state) {
-    setActions(prev => ({ ...prev, [roomId]: state }));
+  function setCourtAction(courtId, state) {
+    setActions(prev => ({ ...prev, [courtId]: state }));
   }
 
-  async function handleReserve(room) {
-    setRoomAction(room.id, { loading: true, message: null, type: null });
+  async function handleReserve(court) {
+    setCourtAction(court.id, { loading: true, message: null, type: null });
     try {
       await createReservation({
         user_id: user.id,
-        resource_id: room.id,
+        resource_id: court.id,
         reservation_date: selectedDate,
         start_time: selectedTime,
       });
-      setRoomAction(room.id, {
+      setCourtAction(court.id, {
         loading: false,
         message: 'Reservation confirmed!',
         type: 'success',
@@ -140,20 +140,20 @@ export default function LibraryReservationsPage() {
       setAllReservations(reservations);
       setUserWaitlists(waitlists);
     } catch (e) {
-      setRoomAction(room.id, { loading: false, message: e.message, type: 'error' });
+      setCourtAction(court.id, { loading: false, message: e.message, type: 'error' });
     }
   }
 
-  async function handleWaitlist(room) {
-    setRoomAction(room.id, { loading: true, message: null, type: null });
+  async function handleWaitlist(court) {
+    setCourtAction(court.id, { loading: true, message: null, type: null });
     try {
       await joinWaitlist({
         user_id: user.id,
-        resource_id: room.id,
+        resource_id: court.id,
         reservation_date: selectedDate,
         start_time: selectedTime,
       });
-      setRoomAction(room.id, {
+      setCourtAction(court.id, {
         loading: false,
         message: "You've been added to the waitlist.",
         type: 'success',
@@ -161,7 +161,7 @@ export default function LibraryReservationsPage() {
       const waitlists = await fetchWaitlists({ userId: user.id });
       setUserWaitlists(waitlists);
     } catch (e) {
-      setRoomAction(room.id, { loading: false, message: e.message, type: 'error' });
+      setCourtAction(court.id, { loading: false, message: e.message, type: 'error' });
     }
   }
 
@@ -171,53 +171,53 @@ export default function LibraryReservationsPage() {
   const hasSelection = Boolean(selectedDate && selectedTime);
 
   return (
-    <div className="lib-page">
+    <div className="rec-page">
       <Navbar />
 
-      <main className="lib-main">
-        <div className="lib-inner">
+      <main className="rec-main">
+        <div className="rec-inner">
 
           {/* Breadcrumb */}
-          <div className="lib-breadcrumb">
-            <Link to="/app" className="lib-back-link">← Dashboard</Link>
+          <div className="rec-breadcrumb">
+            <Link to="/app" className="rec-back-link">← Dashboard</Link>
           </div>
 
           {/* Page header */}
-          <header className="lib-header">
-            <div className="lib-header-icon" aria-hidden="true">
-              <LibraryIcon />
+          <header className="rec-header">
+            <div className="rec-header-icon" aria-hidden="true">
+              <CourtIcon />
             </div>
             <div>
-              <h1 className="lib-title">Library Study Rooms</h1>
-              <p className="lib-subtitle">
-                Hayden Library &mdash; Select a date and time slot to check availability.
+              <h1 className="rec-title">Recreation Courts</h1>
+              <p className="rec-subtitle">
+                SDFC Recreation Center &mdash; Select a date and time slot to check availability.
               </p>
             </div>
           </header>
 
           {/* Selectors panel */}
-          <section className="lib-selectors" aria-label="Date and time selection">
-            <div className="lib-selector-row">
-              <div className="lib-date-group">
-                <label className="lib-label" htmlFor="lib-date-picker">Date</label>
+          <section className="rec-selectors" aria-label="Date and time selection">
+            <div className="rec-selector-row">
+              <div className="rec-date-group">
+                <label className="rec-label" htmlFor="rec-date-picker">Date</label>
                 <input
-                  id="lib-date-picker"
+                  id="rec-date-picker"
                   type="date"
-                  className="lib-date-input"
+                  className="rec-date-input"
                   value={selectedDate}
                   min={today}
                   onChange={e => setSelectedDate(e.target.value)}
                 />
               </div>
 
-              <div className="lib-time-group">
-                <span className="lib-label">Time Slot (1 hour)</span>
-                <div className="lib-time-slots" role="group" aria-label="Available time slots">
+              <div className="rec-time-group">
+                <span className="rec-label">Time Slot (1 hour)</span>
+                <div className="rec-time-slots" role="group" aria-label="Available time slots">
                   {TIME_SLOTS.map(slot => (
                     <button
                       key={slot.value}
                       type="button"
-                      className={`lib-time-btn${selectedTime === slot.value ? ' lib-time-btn--active' : ''}`}
+                      className={`rec-time-btn${selectedTime === slot.value ? ' rec-time-btn--active' : ''}`}
                       onClick={() => setSelectedTime(slot.value)}
                     >
                       {slot.label}
@@ -228,57 +228,57 @@ export default function LibraryReservationsPage() {
             </div>
           </section>
 
-          {/* Rooms section */}
-          {loadingRooms ? (
-            <p className="lib-state-msg">Loading rooms&hellip;</p>
-          ) : roomsError ? (
-            <p className="lib-state-msg lib-state-msg--error">{roomsError}</p>
-          ) : rooms.length === 0 ? (
-            <p className="lib-state-msg">No study rooms found.</p>
+          {/* Courts section */}
+          {loadingCourts ? (
+            <p className="rec-state-msg">Loading courts&hellip;</p>
+          ) : courtsError ? (
+            <p className="rec-state-msg rec-state-msg--error">{courtsError}</p>
+          ) : courts.length === 0 ? (
+            <p className="rec-state-msg">No courts found.</p>
           ) : (
             <>
               {!hasSelection && (
-                <div className="lib-prompt-banner">
+                <div className="rec-prompt-banner">
                   <InfoIcon />
-                  <span>Select a date and time slot above to see room availability.</span>
+                  <span>Select a date and time slot above to see court availability.</span>
                 </div>
               )}
 
               {hasSelection && loadingSlots && (
-                <p className="lib-availability-loading">Checking availability&hellip;</p>
+                <p className="rec-availability-loading">Checking availability&hellip;</p>
               )}
 
               {hasSelection && !loadingSlots && (
-                <div className="lib-legend">
-                  <span className="lib-badge lib-badge--available">Available</span>
-                  <span className="lib-badge lib-badge--occupied">Unavailable</span>
-                  <span className="lib-badge lib-badge--yours">Your Booking</span>
+                <div className="rec-legend">
+                  <span className="rec-badge rec-badge--available">Available</span>
+                  <span className="rec-badge rec-badge--occupied">Unavailable</span>
+                  <span className="rec-badge rec-badge--yours">Your Booking</span>
                 </div>
               )}
 
-              <div className="lib-rooms-grid">
-                {rooms.map(room => {
-                  const features = room.features
-                    ? room.features.split(',').map(f => f.trim()).filter(Boolean)
+              <div className="rec-courts-grid">
+                {courts.map(court => {
+                  const features = court.features
+                    ? court.features.split(',').map(f => f.trim()).filter(Boolean)
                     : [];
 
-                  const occupied     = hasSelection && isOccupied(room.id);
-                  const userReserved = hasSelection && isUserReserved(room.id);
-                  const userWl       = hasSelection && isUserWaitlisted(room.id);
-                  const action       = actions[room.id] ?? null;
+                  const occupied     = hasSelection && isOccupied(court.id);
+                  const userReserved = hasSelection && isUserReserved(court.id);
+                  const userWl       = hasSelection && isUserWaitlisted(court.id);
+                  const action       = actions[court.id] ?? null;
 
                   return (
-                    <RoomCard
-                      key={room.id}
-                      room={room}
+                    <CourtCard
+                      key={court.id}
+                      court={court}
                       features={features}
                       hasSelection={hasSelection}
                       occupied={occupied}
                       userReserved={userReserved}
                       userWaitlisted={userWl}
                       action={action}
-                      onReserve={() => handleReserve(room)}
-                      onWaitlist={() => handleWaitlist(room)}
+                      onReserve={() => handleReserve(court)}
+                      onWaitlist={() => handleWaitlist(court)}
                     />
                   );
                 })}
@@ -293,10 +293,10 @@ export default function LibraryReservationsPage() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Room Card
+   Court Card
 ───────────────────────────────────────────────────────────────── */
-function RoomCard({
-  room,
+function CourtCard({
+  court,
   features,
   hasSelection,
   occupied,
@@ -311,21 +311,21 @@ function RoomCard({
 
   if (hasSelection) {
     if (userReserved) {
-      badge = <span className="lib-badge lib-badge--yours">Your Booking</span>;
+      badge = <span className="rec-badge rec-badge--yours">Your Booking</span>;
       actionArea = (
-        <p className="lib-action-note">You have reserved this slot.</p>
+        <p className="rec-action-note">You have reserved this slot.</p>
       );
     } else if (occupied) {
-      badge = <span className="lib-badge lib-badge--occupied">Unavailable</span>;
+      badge = <span className="rec-badge rec-badge--occupied">Unavailable</span>;
       if (userWaitlisted) {
         actionArea = (
-          <p className="lib-action-note">You are on the waitlist for this slot.</p>
+          <p className="rec-action-note">You are on the waitlist for this slot.</p>
         );
       } else {
         actionArea = (
           <button
             type="button"
-            className="lib-btn lib-btn--waitlist"
+            className="rec-btn rec-btn--waitlist"
             onClick={onWaitlist}
             disabled={action?.loading}
           >
@@ -334,11 +334,11 @@ function RoomCard({
         );
       }
     } else {
-      badge = <span className="lib-badge lib-badge--available">Available</span>;
+      badge = <span className="rec-badge rec-badge--available">Available</span>;
       actionArea = (
         <button
           type="button"
-          className="lib-btn lib-btn--reserve"
+          className="rec-btn rec-btn--reserve"
           onClick={onReserve}
           disabled={action?.loading}
         >
@@ -349,18 +349,18 @@ function RoomCard({
   }
 
   return (
-    <div className={`lib-room-card${occupied && hasSelection ? ' lib-room-card--occupied' : ''}`}>
-      <div className="lib-room-header">
-        <h3 className="lib-room-name">{room.name}</h3>
+    <div className={`rec-court-card${occupied && hasSelection ? ' rec-court-card--occupied' : ''}`}>
+      <div className="rec-court-header">
+        <h3 className="rec-court-name">{court.name}</h3>
         {badge}
       </div>
 
-      <p className="lib-room-capacity">
-        <CapacityIcon /> Capacity: {room.capacity}
+      <p className="rec-court-capacity">
+        <CapacityIcon /> Capacity: {court.capacity}
       </p>
 
       {features.length > 0 && (
-        <ul className="lib-room-features">
+        <ul className="rec-court-features">
           {features.map(f => (
             <li key={f}>
               <CheckIcon /> {f}
@@ -370,10 +370,10 @@ function RoomCard({
       )}
 
       {hasSelection && (
-        <div className="lib-room-actions">
+        <div className="rec-court-actions">
           {actionArea}
           {action?.message && (
-            <p className={`lib-feedback lib-feedback--${action.type}`}>
+            <p className={`rec-feedback rec-feedback--${action.type}`}>
               {action.message}
             </p>
           )}
@@ -386,14 +386,14 @@ function RoomCard({
 /* ─────────────────────────────────────────────────────────────────
    Inline SVG icons
 ───────────────────────────────────────────────────────────────── */
-function LibraryIcon() {
+function CourtIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
       strokeLinecap="round" strokeLinejoin="round" width="36" height="36">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      <line x1="9" y1="7" x2="15" y2="7" />
-      <line x1="9" y1="11" x2="15" y2="11" />
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <circle cx="6" cy="8" r="1" fill="currentColor" stroke="none" />
     </svg>
   );
 }

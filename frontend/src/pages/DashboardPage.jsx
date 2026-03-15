@@ -65,7 +65,7 @@ export default function DashboardPage() {
               icon="🏸"
               title="Recreation Courts"
               description="Reserve badminton courts at the SDFC."
-              coming
+              to="/app/recreation"
             />
             <ModuleCard
               icon="✅"
