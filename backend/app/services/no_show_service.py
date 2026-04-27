@@ -62,7 +62,14 @@ def process_no_shows(db: Session) -> NoShowProcessResponse:
         .all()
     )
 
-    eligible = [r for r in candidates if r.check_in_deadline < now]
+    def _deadline_utc(r: Reservation) -> dt.datetime:
+        d = r.check_in_deadline
+        if d.tzinfo is None:
+            from zoneinfo import ZoneInfo
+            d = d.replace(tzinfo=ZoneInfo("America/Phoenix")).astimezone(dt.timezone.utc)
+        return d
+
+    eligible = [r for r in candidates if _deadline_utc(r) < now]
 
     processed: list[NoShowResult] = []
 

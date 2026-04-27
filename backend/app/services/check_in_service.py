@@ -98,9 +98,18 @@ def process_check_in(db: Session, data: CheckInRequest) -> CheckInResponse:
     # check_in_deadline = start_time + 15 min  (stored on reservation)
     # window_open       = start_time - 15 min  = deadline - 30 min
     # window_close      = check_in_deadline
+    #
+    # SQLite returns DateTime values as naive datetimes (no tzinfo).
+    # Normalise the deadline to UTC before comparing with now_utc.
     now = dt.datetime.now(tz=dt.timezone.utc)
-    window_open = reservation.check_in_deadline - dt.timedelta(minutes=30)
-    window_close = reservation.check_in_deadline
+    deadline = reservation.check_in_deadline
+    if deadline.tzinfo is None:
+        # Stored as Arizona local time (AZ = UTC-7, no DST).
+        # Attach AZ timezone then convert to UTC for a consistent comparison.
+        from zoneinfo import ZoneInfo as _ZI
+        deadline = deadline.replace(tzinfo=_ZI("America/Phoenix")).astimezone(dt.timezone.utc)
+    window_open = deadline - dt.timedelta(minutes=30)
+    window_close = deadline
     within_time_window = window_open <= now <= window_close
 
     # ── 6. Determine result ─────────────────────────────────────────────────

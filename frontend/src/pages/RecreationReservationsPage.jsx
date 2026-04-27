@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import ReservationEmailModal from '../components/ReservationEmailModal';
+import { ResourceGridSkeleton } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { fetchBuildings, fetchResources } from '../api/resources';
-import { fetchReservations, createReservation } from '../api/reservations';
+import { fetchReservations, createReservation, fetchConfig, fetchTestSlots } from '../api/reservations';
 import { fetchWaitlists, joinWaitlist } from '../api/waitlists';
-import { TIME_SLOTS, OCCUPYING, ACTIVE_WAITLIST, todayString } from '../utils/reservationSlots';
+import { TIME_SLOTS, OCCUPYING, ACTIVE_WAITLIST, todayString, getEffectiveSlots } from '../utils/reservationSlots';
 import './RecreationReservationsPage.css';
 
 export default function RecreationReservationsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // Courts (static after mount)
   const [courts, setCourts] = useState([]);
@@ -17,7 +21,7 @@ export default function RecreationReservationsPage() {
   const [courtsError, setCourtsError] = useState(null);
 
   // Date / time selection
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState(todayString());
   const [selectedTime, setSelectedTime] = useState('');
 
   // Slot availability data
@@ -27,6 +31,24 @@ export default function RecreationReservationsPage() {
 
   // Per-court action state: { [courtId]: { loading, message, type } }
   const [actions, setActions] = useState({});
+
+  // Email-prompt modal state for both reserve and waitlist flows.
+  // Shape: { court, mode: 'reserve' | 'waitlist', submitting, error } | null
+  const [emailModal, setEmailModal] = useState(null);
+
+  // Demo / test-mode state
+  const [demoMode, setDemoMode] = useState(false);
+  const [testSlots, setTestSlots] = useState([]);
+
+  // Fetch config + test slots on mount
+  useEffect(() => {
+    fetchConfig().then(cfg => {
+      setDemoMode(cfg.demo_mode);
+      if (cfg.demo_mode) {
+        fetchTestSlots().then(setTestSlots);
+      }
+    });
+  }, []);
 
   // Load the SDFC building and its courts on mount
   useEffect(() => {
@@ -118,56 +140,75 @@ export default function RecreationReservationsPage() {
     setActions(prev => ({ ...prev, [courtId]: state }));
   }
 
-  async function handleReserve(court) {
+  function handleReserve(court) {
+    setEmailModal({ court, mode: 'reserve', submitting: false, error: null });
+  }
+
+  function handleWaitlist(court) {
+    setEmailModal({ court, mode: 'waitlist', submitting: false, error: null });
+  }
+
+  async function handleConfirmModal(notificationEmail) {
+    if (!emailModal) return;
+    const { court, mode } = emailModal;
+    setEmailModal({ ...emailModal, submitting: true, error: null });
     setCourtAction(court.id, { loading: true, message: null, type: null });
     try {
-      await createReservation({
-        user_id: user.id,
-        resource_id: court.id,
-        reservation_date: selectedDate,
-        start_time: selectedTime,
-      });
-      setCourtAction(court.id, {
-        loading: false,
-        message: 'Reservation confirmed!',
-        type: 'success',
-      });
-      // Refresh slot data so the UI reflects the new booking
+      if (mode === 'reserve') {
+        await createReservation({
+          user_id: user.id,
+          resource_id: court.id,
+          reservation_date: selectedDate,
+          start_time: selectedTime,
+          notification_email: notificationEmail,
+        });
+        setCourtAction(court.id, { loading: false, message: null, type: 'success' });
+        toast.success(`Booked ${court.name} — confirmation sent to ${notificationEmail}.`);
+        setEmailModal(prev => prev && {
+          ...prev,
+          submitting: false,
+          success: {
+            title: "You're booked!",
+            message: `${court.name} is confirmed. Check ${notificationEmail} for the check-in link.`,
+          },
+        });
+      } else {
+        await joinWaitlist({
+          user_id: user.id,
+          resource_id: court.id,
+          reservation_date: selectedDate,
+          start_time: selectedTime,
+          notification_email: notificationEmail,
+        });
+        setCourtAction(court.id, { loading: false, message: null, type: 'success' });
+        toast.success(`On the waitlist for ${court.name}. We'll email ${notificationEmail} when a slot opens.`);
+        setEmailModal(prev => prev && {
+          ...prev,
+          submitting: false,
+          success: {
+            title: "You're on the list!",
+            message: `We'll email ${notificationEmail} the moment ${court.name} opens up.`,
+          },
+        });
+      }
       const [reservations, waitlists] = await Promise.all([
         fetchReservations(),
         fetchWaitlists({ userId: user.id }),
       ]);
       setAllReservations(reservations);
       setUserWaitlists(waitlists);
+      setTimeout(() => setEmailModal(null), 1300);
     } catch (e) {
       setCourtAction(court.id, { loading: false, message: e.message, type: 'error' });
-    }
-  }
-
-  async function handleWaitlist(court) {
-    setCourtAction(court.id, { loading: true, message: null, type: null });
-    try {
-      await joinWaitlist({
-        user_id: user.id,
-        resource_id: court.id,
-        reservation_date: selectedDate,
-        start_time: selectedTime,
-      });
-      setCourtAction(court.id, {
-        loading: false,
-        message: "You've been added to the waitlist.",
-        type: 'success',
-      });
-      const waitlists = await fetchWaitlists({ userId: user.id });
-      setUserWaitlists(waitlists);
-    } catch (e) {
-      setCourtAction(court.id, { loading: false, message: e.message, type: 'error' });
+      setEmailModal(prev => prev && { ...prev, submitting: false, error: e.message });
+      toast.error(e.message);
     }
   }
 
   // ── Render ───────────────────────────────────────────────────────
 
   const today = todayString();
+  const effectiveSlots = getEffectiveSlots(testSlots, selectedDate);
   const hasSelection = Boolean(selectedDate && selectedTime);
 
   return (
@@ -213,11 +254,11 @@ export default function RecreationReservationsPage() {
               <div className="rec-time-group">
                 <span className="rec-label">Time Slot (1 hour)</span>
                 <div className="rec-time-slots" role="group" aria-label="Available time slots">
-                  {TIME_SLOTS.map(slot => (
+                  {effectiveSlots.map(slot => (
                     <button
                       key={slot.value}
                       type="button"
-                      className={`rec-time-btn${selectedTime === slot.value ? ' rec-time-btn--active' : ''}`}
+                      className={`rec-time-btn${selectedTime === slot.value ? ' rec-time-btn--active' : ''}${slot.is_test_slot ? ' rec-time-btn--test' : ''}`}
                       onClick={() => setSelectedTime(slot.value)}
                     >
                       {slot.label}
@@ -230,7 +271,9 @@ export default function RecreationReservationsPage() {
 
           {/* Courts section */}
           {loadingCourts ? (
-            <p className="rec-state-msg">Loading courts&hellip;</p>
+            <div className="rec-courts-grid">
+              <ResourceGridSkeleton count={4} />
+            </div>
           ) : courtsError ? (
             <p className="rec-state-msg rec-state-msg--error">{courtsError}</p>
           ) : courts.length === 0 ? (
@@ -288,6 +331,23 @@ export default function RecreationReservationsPage() {
 
         </div>
       </main>
+
+      <ReservationEmailModal
+        open={Boolean(emailModal)}
+        defaultEmail={user.email}
+        resourceName={emailModal?.court?.name}
+        reservationDate={selectedDate}
+        reservationTimeLabel={
+          getEffectiveSlots(testSlots, selectedDate).find(s => s.value === selectedTime)?.label
+          ?? selectedTime
+        }
+        mode={emailModal?.mode}
+        onCancel={() => setEmailModal(null)}
+        onConfirm={handleConfirmModal}
+        submitting={emailModal?.submitting}
+        error={emailModal?.error}
+        success={emailModal?.success}
+      />
     </div>
   );
 }

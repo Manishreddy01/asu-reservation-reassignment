@@ -5,6 +5,15 @@ All API routes live under /api/v1.
 Interactive docs: http://localhost:8000/docs
 """
 
+# Load .env before any app module imports so SMTP_* vars are available.
+# Graceful fallback: if python-dotenv is not installed in this environment,
+# env vars must be set manually (e.g. DEMO_MODE=true before starting uvicorn).
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -45,8 +54,10 @@ app.add_middleware(
 # Startup — ensure tables exist (idempotent; won't re-seed)
 # ---------------------------------------------------------------------------
 @app.on_event("startup")
-def on_startup() -> None:
+async def on_startup() -> None:
     create_tables()
+    from app.services.reminder_scheduler import start_in_background
+    start_in_background()
 
 
 # ---------------------------------------------------------------------------

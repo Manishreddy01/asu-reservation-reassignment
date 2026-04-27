@@ -9,22 +9,20 @@ Everything else (route handlers, schemas) stays the same.
 
 import base64
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.user import User
 
 # ---------------------------------------------------------------------------
-# Password hashing
+# Password hashing (direct bcrypt — avoids passlib/bcrypt 4+ incompatibility)
 # ---------------------------------------------------------------------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 
 # ---------------------------------------------------------------------------

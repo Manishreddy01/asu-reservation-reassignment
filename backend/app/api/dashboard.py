@@ -1,4 +1,5 @@
 import datetime as dt
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -16,12 +17,15 @@ from app.schemas.waitlist import WaitlistResponse
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
+AZ = ZoneInfo("America/Phoenix")
+
 _UPCOMING_STATUSES = [ReservationStatus.reserved]
 _ACTIVE_STATUSES = [ReservationStatus.active, ReservationStatus.reassigned]
 _HISTORY_STATUSES = [
     ReservationStatus.completed,
     ReservationStatus.no_show,
     ReservationStatus.cancelled,
+    ReservationStatus.released,
 ]
 _WAITLIST_ACTIVE = [WaitlistStatus.waiting, WaitlistStatus.offered]
 
@@ -32,8 +36,8 @@ _WAITLIST_ACTIVE = [WaitlistStatus.waiting, WaitlistStatus.offered]
     summary="Student dashboard",
     description=(
         "Returns all data needed to render the student dashboard: "
-        "active reservations, upcoming reservations, waitlist queue, "
-        "unread notifications, and recent history."
+        "active reservations, upcoming reservations, pending no-shows, "
+        "waitlist queue, unread notifications, and recent history."
     ),
 )
 def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> DashboardResponse:
@@ -44,9 +48,10 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> DashboardRespo
             detail=f"User {user_id} not found.",
         )
 
-    today = dt.date.today()
+    today = dt.datetime.now(tz=AZ).date()
+    now_utc = dt.datetime.now(tz=dt.timezone.utc)
 
-    # Active reservations (checked in right now)
+    # Active reservations (checked in right now — today only)
     active = (
         db.query(Reservation)
         .filter(
@@ -58,17 +63,34 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> DashboardRespo
         .all()
     )
 
-    # Upcoming reservations (reserved but not yet checked in, today or future)
-    upcoming = (
+    # Include yesterday to catch slots that wrap past midnight (test slots near 00:00 AZ).
+    yesterday = today - dt.timedelta(days=1)
+    upcoming_raw = (
         db.query(Reservation)
         .filter(
             Reservation.user_id == user_id,
             Reservation.status.in_(_UPCOMING_STATUSES),
-            Reservation.reservation_date >= today,
+            Reservation.reservation_date >= yesterday,
         )
         .order_by(Reservation.reservation_date, Reservation.start_time)
         .all()
     )
+
+    upcoming = []
+    pending_no_show = []
+
+    def _deadline_utc(r: Reservation) -> dt.datetime:
+        d = r.check_in_deadline
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=AZ).astimezone(dt.timezone.utc)
+        return d
+
+    for r in upcoming_raw:
+        dl = _deadline_utc(r)
+        if dl > now_utc:
+            upcoming.append(r)
+        elif r.checked_in_at is None:
+            pending_no_show.append(r)
 
     # Active waitlist entries
     waitlist = (
@@ -106,6 +128,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> DashboardRespo
         user=UserOut.model_validate(user),
         active_reservations=[ReservationResponse.model_validate(r) for r in active],
         upcoming_reservations=[ReservationResponse.model_validate(r) for r in upcoming],
+        pending_no_show_reservations=[ReservationResponse.model_validate(r) for r in pending_no_show],
         waitlist_entries=[WaitlistResponse.model_validate(w) for w in waitlist],
         unread_notifications=[NotificationResponse.model_validate(n) for n in unread],
         recent_history=[ReservationResponse.model_validate(r) for r in history],

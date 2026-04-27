@@ -4,9 +4,9 @@ Building model.
 Stores building-level geofence data.
 Coordinates are placeholders — swap in real ASU GPS values when ready.
 
-Placeholder coords:
-  ASU Hayden Library  : 33.4183, -111.9346
-  SDFC Recreation     : 33.4255, -111.9323
+Demo coords:
+  Hayden Library      : 33.4149, -111.8945
+  SDFC Recreation     : 33.4188, -111.9318
 """
 
 from datetime import datetime, timezone

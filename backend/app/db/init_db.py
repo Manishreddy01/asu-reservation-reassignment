@@ -10,6 +10,7 @@ Usage (from the backend/ directory):
 """
 
 import sys
+from sqlalchemy import inspect, text
 from app.db.database import engine, Base
 
 # Import all models so Base.metadata knows about every table
@@ -19,7 +20,30 @@ import app.models  # noqa: F401 — side-effect import
 def create_tables() -> None:
     print("[init_db] Creating tables...")
     Base.metadata.create_all(bind=engine)
+    _apply_lightweight_migrations()
     print("[init_db] Tables created.")
+
+
+def _apply_lightweight_migrations() -> None:
+    """
+    Idempotent column additions for the prototype's SQLite DB.
+    create_all only creates missing tables — it does not alter existing ones.
+    Each entry: (table, column, ddl).
+    """
+    additions = [
+        ("reservations",      "notification_email", "VARCHAR(255)"),
+        ("waitlist_entries",  "notification_email", "VARCHAR(255)"),
+    ]
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        for table, column, ddl in additions:
+            if not inspector.has_table(table):
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            if column in existing:
+                continue
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
+            print(f"[init_db] Added column {table}.{column}")
 
 
 def run_seeds() -> None:

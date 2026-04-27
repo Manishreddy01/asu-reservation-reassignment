@@ -19,7 +19,7 @@ check_in_deadline:
 import enum
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Date, Time, DateTime, ForeignKey, Enum as SAEnum, UniqueConstraint
+    Date, Time, DateTime, ForeignKey, Enum as SAEnum, String, UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -64,6 +64,10 @@ class Reservation(Base):
     # Deadline = start_time + 15 min; stored explicitly for easy querying
     check_in_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Email captured at booking time for confirmation + check-in reminders.
+    # Falls back to user.email when null (legacy reservations).
+    notification_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

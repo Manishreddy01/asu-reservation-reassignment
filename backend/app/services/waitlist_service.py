@@ -45,7 +45,7 @@ from app.schemas.waitlist_process import (
     ProcessOffersResponse,
 )
 from app.services.geofence import check_geofence
-from app.services.messaging_service import send_event
+from app.services.messaging_service import send_event, send_waitlist_event
 
 _OFFER_WINDOW_MINUTES = 5
 
@@ -135,8 +135,8 @@ def _issue_offer(
     entry.offer_expires_at = expires_at
     db.add(entry)
 
-    send_event(
-        db, "waitlist_offer", user, resource, reservation,
+    send_waitlist_event(
+        db, "waitlist_offer", user, resource, entry,
         offer_window_minutes=_OFFER_WINDOW_MINUTES,
     )
 
@@ -227,7 +227,16 @@ def process_expirations(db: Session) -> ProcessExpirationsResponse:
         .filter(WaitlistEntry.status == WaitlistStatus.offered)
         .all()
     )
-    overdue = [e for e in offered_candidates if e.offer_expires_at is not None and e.offer_expires_at < now]
+    def _expires_utc(e: WaitlistEntry) -> dt.datetime:
+        d = e.offer_expires_at
+        if d is None:
+            return dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+        if d.tzinfo is None:
+            from zoneinfo import ZoneInfo
+            d = d.replace(tzinfo=ZoneInfo("America/Phoenix")).astimezone(dt.timezone.utc)
+        return d
+
+    overdue = [e for e in offered_candidates if e.offer_expires_at is not None and _expires_utc(e) < now]
 
     expired_results: list[ExpirationResult] = []
     new_offer_results: list[OfferResult] = []
@@ -343,7 +352,16 @@ def claim_reservation(db: Session, data: ClaimRequest) -> ClaimResponse:
         )
 
     # ── 3. Expiry guard ───────────────────────────────────────────────────────
-    if entry.offer_expires_at is None or entry.offer_expires_at < now:
+    def _expires_utc(e: WaitlistEntry) -> dt.datetime:
+        d = e.offer_expires_at
+        if d is None:
+            return dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+        if d.tzinfo is None:
+            from zoneinfo import ZoneInfo
+            d = d.replace(tzinfo=ZoneInfo("America/Phoenix")).astimezone(dt.timezone.utc)
+        return d
+
+    if entry.offer_expires_at is None or _expires_utc(entry) < now:
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail=(
@@ -353,20 +371,61 @@ def claim_reservation(db: Session, data: ClaimRequest) -> ClaimResponse:
         )
 
     # ── 4. Find the released reservation ─────────────────────────────────────
+    # Also accepts slots freed by cancellation (no active occupying reservation).
     reservation = _find_released_reservation(
         db,
         entry.resource_id,
         entry.reservation_date,
         entry.start_time,
     )
+
     if not reservation:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "No released reservation found for this slot. "
-                "The slot may have already been claimed by another student."
-            ),
+        # Slot may have been freed by a cancellation rather than a no-show.
+        # Check that no active reservation occupies this slot.
+        _OCCUPYING = [
+            ReservationStatus.reserved,
+            ReservationStatus.active,
+            ReservationStatus.reassigned,
+        ]
+        occupying = (
+            db.query(Reservation)
+            .filter(
+                Reservation.resource_id == entry.resource_id,
+                Reservation.reservation_date == entry.reservation_date,
+                Reservation.start_time == entry.start_time,
+                Reservation.status.in_(_OCCUPYING),
+            )
+            .first()
         )
+        if occupying:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "This slot is now occupied by another student and can no longer be claimed."
+                ),
+            )
+        # Slot is genuinely free — create a new reservation for the claiming student.
+        # Import here to avoid circular dependency.
+        import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZI
+        _AZ = _ZI("America/Phoenix")
+        _start_dt = _dt.datetime.combine(
+            entry.reservation_date, entry.start_time, tzinfo=_AZ
+        )
+        _end_time = (_start_dt + _dt.timedelta(hours=1)).time()
+        _deadline = _start_dt + _dt.timedelta(minutes=15)
+        reservation = Reservation(
+            user_id=data.user_id,
+            resource_id=entry.resource_id,
+            reservation_date=entry.reservation_date,
+            start_time=entry.start_time,
+            end_time=_end_time,
+            status=ReservationStatus.reassigned,
+            check_in_deadline=_deadline,
+            checked_in_at=now,
+        )
+        db.add(reservation)
+        db.flush()  # get reservation.id before writing logs
 
     # ── 5. Resource and building lookup ───────────────────────────────────────
     resource = db.query(Resource).filter(Resource.id == entry.resource_id).first()

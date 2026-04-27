@@ -13,6 +13,7 @@ class DashboardResponse(BaseModel):
     user: UserOut
     active_reservations: list[ReservationResponse]
     upcoming_reservations: list[ReservationResponse]
+    pending_no_show_reservations: list[ReservationResponse]  # reserved but deadline passed, not yet processed
     waitlist_entries: list[WaitlistResponse]
     unread_notifications: list[NotificationResponse]
     recent_history: list[ReservationResponse]

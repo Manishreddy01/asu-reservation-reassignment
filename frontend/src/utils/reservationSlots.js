@@ -29,3 +29,16 @@ export function todayString() {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
+
+/**
+ * Build the effective slot list.
+ * When demoMode is on and selectedDate is today, prepend test slots
+ * (fetched from the backend) before the standard hourly slots.
+ */
+export function getEffectiveSlots(testSlots, selectedDate) {
+  const today = todayString();
+  if (selectedDate === today && testSlots.length > 0) {
+    return [...testSlots, ...TIME_SLOTS];
+  }
+  return TIME_SLOTS;
+}

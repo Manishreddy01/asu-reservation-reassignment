@@ -105,11 +105,20 @@ def send_reminders(
     # check_in_deadline = start + 15 min, so:
     #   start > now  ⟺  check_in_deadline > now + 15 min
     #   start < now + window_minutes  ⟺  check_in_deadline < now + window_minutes + 15 min
+    def _deadline_utc(r: Reservation) -> dt.datetime:
+        d = r.check_in_deadline
+        if d is None:
+            return dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+        if d.tzinfo is None:
+            from zoneinfo import ZoneInfo
+            d = d.replace(tzinfo=ZoneInfo("America/Phoenix")).astimezone(dt.timezone.utc)
+        return d
+
     in_window = [
         r for r in candidates
         if r.check_in_deadline is not None
-        and r.check_in_deadline > now + dt.timedelta(minutes=15)
-        and r.check_in_deadline <= cutoff
+        and _deadline_utc(r) > now + dt.timedelta(minutes=15)
+        and _deadline_utc(r) <= cutoff
     ]
 
     reminders_sent = 0

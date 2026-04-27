@@ -6,9 +6,19 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid rgba(224, 224, 224, 0.6);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* When the page is scrolled, deepen the navbar's presence (set via JS). */
+.navbar--scrolled {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
+  border-bottom-color: rgba(224, 224, 224, 0.9);
 }
 
 .navbar-inner {
@@ -94,8 +104,17 @@
 
 /* ── Mobile ── */
 @media (max-width: 520px) {
+  .navbar-inner {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .navbar-actions {
+    gap: 10px;
+  }
+
   .navbar-link {
-    display: none;
+    font-size: 0.8rem;
   }
 
   .navbar-logo-text {

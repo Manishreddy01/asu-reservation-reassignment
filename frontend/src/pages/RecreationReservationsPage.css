@@ -147,6 +147,26 @@
   color: #fff;
 }
 
+/* Test-mode slot styling */
+.rec-time-btn--test {
+  border-color: #e67e22;
+  color: #e67e22;
+  background: #fef9f3;
+  font-weight: 600;
+}
+
+.rec-time-btn--test:hover {
+  background: #fdf0e0;
+  border-color: #d35400;
+  color: #d35400;
+}
+
+.rec-time-btn--test.rec-time-btn--active {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+}
+
 /* ── Prompt banner ── */
 .rec-prompt-banner {
   display: flex;
@@ -204,11 +224,14 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  will-change: transform;
 }
 
 .rec-court-card:hover {
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--asu-maroon-light);
+  transform: translateY(-3px);
 }
 
 .rec-court-card--occupied {

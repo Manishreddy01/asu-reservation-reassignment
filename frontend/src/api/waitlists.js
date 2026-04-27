@@ -2,7 +2,6 @@ const BASE = '/api/v1';
 
 /**
  * @param {{ userId?: number, resourceId?: number }} opts
- * @returns {Promise<Array>}
  */
 export async function fetchWaitlists({ userId, resourceId } = {}) {
   const params = new URLSearchParams();
@@ -15,9 +14,13 @@ export async function fetchWaitlists({ userId, resourceId } = {}) {
 }
 
 /**
- * @param {{ user_id: number, resource_id: number, reservation_date: string, start_time: string }} data
- * @returns {Promise<object>}
- * @throws {Error} with backend detail message on failure
+ * @param {{
+ *   user_id: number,
+ *   resource_id: number,
+ *   reservation_date: string,
+ *   start_time: string,
+ *   notification_email: string,
+ * }} data
  */
 export async function joinWaitlist(data) {
   const res = await fetch(`${BASE}/waitlists`, {
@@ -28,5 +31,22 @@ export async function joinWaitlist(data) {
 
   const json = await res.json();
   if (!res.ok) throw new Error(json.detail ?? 'Could not join waitlist. Please try again.');
+  return json;
+}
+
+/**
+ * Remove the student from a waitlist entry.
+ * @param {number} entryId
+ * @param {number} userId
+ */
+export async function cancelWaitlistEntry(entryId, userId) {
+  const res = await fetch(`${BASE}/waitlists/${entryId}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.detail ?? 'Could not cancel waitlist entry. Please try again.');
   return json;
 }

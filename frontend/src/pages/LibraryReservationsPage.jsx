@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import ReservationEmailModal from '../components/ReservationEmailModal';
+import { ResourceGridSkeleton } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { fetchBuildings, fetchResources } from '../api/resources';
-import { fetchReservations, createReservation } from '../api/reservations';
+import { fetchReservations, createReservation, fetchConfig, fetchTestSlots } from '../api/reservations';
 import { fetchWaitlists, joinWaitlist } from '../api/waitlists';
-import { TIME_SLOTS, OCCUPYING, ACTIVE_WAITLIST, todayString } from '../utils/reservationSlots';
+import { TIME_SLOTS, OCCUPYING, ACTIVE_WAITLIST, todayString, getEffectiveSlots } from '../utils/reservationSlots';
 import './LibraryReservationsPage.css';
 
 export default function LibraryReservationsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // Rooms (static after mount)
   const [rooms, setRooms] = useState([]);
@@ -17,7 +21,7 @@ export default function LibraryReservationsPage() {
   const [roomsError, setRoomsError] = useState(null);
 
   // Date / time selection
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState(todayString());
   const [selectedTime, setSelectedTime] = useState('');
 
   // Slot availability data
@@ -27,6 +31,24 @@ export default function LibraryReservationsPage() {
 
   // Per-room action state: { [roomId]: { loading, message, type } }
   const [actions, setActions] = useState({});
+
+  // Email-prompt modal state for both reserve and waitlist flows.
+  // Shape: { room, mode: 'reserve' | 'waitlist', submitting, error } | null
+  const [emailModal, setEmailModal] = useState(null);
+
+  // Demo / test-mode state
+  const [demoMode, setDemoMode] = useState(false);
+  const [testSlots, setTestSlots] = useState([]);
+
+  // Fetch config + test slots on mount
+  useEffect(() => {
+    fetchConfig().then(cfg => {
+      setDemoMode(cfg.demo_mode);
+      if (cfg.demo_mode) {
+        fetchTestSlots().then(setTestSlots);
+      }
+    });
+  }, []);
 
   // Load the library building and its study rooms on mount
   useEffect(() => {
@@ -118,56 +140,75 @@ export default function LibraryReservationsPage() {
     setActions(prev => ({ ...prev, [roomId]: state }));
   }
 
-  async function handleReserve(room) {
+  function handleReserve(room) {
+    setEmailModal({ room, mode: 'reserve', submitting: false, error: null });
+  }
+
+  function handleWaitlist(room) {
+    setEmailModal({ room, mode: 'waitlist', submitting: false, error: null });
+  }
+
+  async function handleConfirmModal(notificationEmail) {
+    if (!emailModal) return;
+    const { room, mode } = emailModal;
+    setEmailModal({ ...emailModal, submitting: true, error: null });
     setRoomAction(room.id, { loading: true, message: null, type: null });
     try {
-      await createReservation({
-        user_id: user.id,
-        resource_id: room.id,
-        reservation_date: selectedDate,
-        start_time: selectedTime,
-      });
-      setRoomAction(room.id, {
-        loading: false,
-        message: 'Reservation confirmed!',
-        type: 'success',
-      });
-      // Refresh slot data so the UI reflects the new booking
+      if (mode === 'reserve') {
+        await createReservation({
+          user_id: user.id,
+          resource_id: room.id,
+          reservation_date: selectedDate,
+          start_time: selectedTime,
+          notification_email: notificationEmail,
+        });
+        setRoomAction(room.id, { loading: false, message: null, type: 'success' });
+        toast.success(`Reserved ${room.name} — confirmation sent to ${notificationEmail}.`);
+        setEmailModal(prev => prev && {
+          ...prev,
+          submitting: false,
+          success: {
+            title: "You're booked!",
+            message: `${room.name} is confirmed. Check ${notificationEmail} for the check-in link.`,
+          },
+        });
+      } else {
+        await joinWaitlist({
+          user_id: user.id,
+          resource_id: room.id,
+          reservation_date: selectedDate,
+          start_time: selectedTime,
+          notification_email: notificationEmail,
+        });
+        setRoomAction(room.id, { loading: false, message: null, type: 'success' });
+        toast.success(`On the waitlist for ${room.name}. We'll email ${notificationEmail} when a slot opens.`);
+        setEmailModal(prev => prev && {
+          ...prev,
+          submitting: false,
+          success: {
+            title: "You're on the list!",
+            message: `We'll email ${notificationEmail} the moment ${room.name} opens up.`,
+          },
+        });
+      }
       const [reservations, waitlists] = await Promise.all([
         fetchReservations(),
         fetchWaitlists({ userId: user.id }),
       ]);
       setAllReservations(reservations);
       setUserWaitlists(waitlists);
+      setTimeout(() => setEmailModal(null), 1300);
     } catch (e) {
       setRoomAction(room.id, { loading: false, message: e.message, type: 'error' });
-    }
-  }
-
-  async function handleWaitlist(room) {
-    setRoomAction(room.id, { loading: true, message: null, type: null });
-    try {
-      await joinWaitlist({
-        user_id: user.id,
-        resource_id: room.id,
-        reservation_date: selectedDate,
-        start_time: selectedTime,
-      });
-      setRoomAction(room.id, {
-        loading: false,
-        message: "You've been added to the waitlist.",
-        type: 'success',
-      });
-      const waitlists = await fetchWaitlists({ userId: user.id });
-      setUserWaitlists(waitlists);
-    } catch (e) {
-      setRoomAction(room.id, { loading: false, message: e.message, type: 'error' });
+      setEmailModal(prev => prev && { ...prev, submitting: false, error: e.message });
+      toast.error(e.message);
     }
   }
 
   // ── Render ───────────────────────────────────────────────────────
 
   const today = todayString();
+  const effectiveSlots = getEffectiveSlots(testSlots, selectedDate);
   const hasSelection = Boolean(selectedDate && selectedTime);
 
   return (
@@ -213,11 +254,11 @@ export default function LibraryReservationsPage() {
               <div className="lib-time-group">
                 <span className="lib-label">Time Slot (1 hour)</span>
                 <div className="lib-time-slots" role="group" aria-label="Available time slots">
-                  {TIME_SLOTS.map(slot => (
+                  {effectiveSlots.map(slot => (
                     <button
                       key={slot.value}
                       type="button"
-                      className={`lib-time-btn${selectedTime === slot.value ? ' lib-time-btn--active' : ''}`}
+                      className={`lib-time-btn${selectedTime === slot.value ? ' lib-time-btn--active' : ''}${slot.is_test_slot ? ' lib-time-btn--test' : ''}`}
                       onClick={() => setSelectedTime(slot.value)}
                     >
                       {slot.label}
@@ -230,7 +271,9 @@ export default function LibraryReservationsPage() {
 
           {/* Rooms section */}
           {loadingRooms ? (
-            <p className="lib-state-msg">Loading rooms&hellip;</p>
+            <div className="lib-rooms-grid">
+              <ResourceGridSkeleton count={4} />
+            </div>
           ) : roomsError ? (
             <p className="lib-state-msg lib-state-msg--error">{roomsError}</p>
           ) : rooms.length === 0 ? (
@@ -288,6 +331,23 @@ export default function LibraryReservationsPage() {
 
         </div>
       </main>
+
+      <ReservationEmailModal
+        open={Boolean(emailModal)}
+        defaultEmail={user.email}
+        resourceName={emailModal?.room?.name}
+        reservationDate={selectedDate}
+        reservationTimeLabel={
+          getEffectiveSlots(testSlots, selectedDate).find(s => s.value === selectedTime)?.label
+          ?? selectedTime
+        }
+        mode={emailModal?.mode}
+        onCancel={() => setEmailModal(null)}
+        onConfirm={handleConfirmModal}
+        submitting={emailModal?.submitting}
+        error={emailModal?.error}
+        success={emailModal?.success}
+      />
     </div>
   );
 }

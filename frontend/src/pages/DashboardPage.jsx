@@ -4,13 +4,14 @@ import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { fetchDashboard } from '../api/dashboard';
 import { markNotificationRead } from '../api/notifications';
+import { cancelReservation } from '../api/reservations';
+import { cancelWaitlistEntry } from '../api/waitlists';
 import './DashboardPage.css';
 
 /* ─────────────────────────────────────────────────────────────────
    Formatting helpers
 ───────────────────────────────────────────────────────────────── */
 function fmtDate(dateStr) {
-  // "2026-03-14" → "Sat, Mar 14"
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
@@ -18,7 +19,6 @@ function fmtDate(dateStr) {
 }
 
 function fmtTime(timeStr) {
-  // "09:00:00" → "9:00 AM"
   const [h, min] = timeStr.split(':').map(Number);
   return new Date(0, 0, 0, h, min).toLocaleTimeString('en-US', {
     hour: 'numeric', minute: '2-digit',
@@ -63,11 +63,16 @@ const WL_STATUS = {
 };
 
 const NOTIF_TYPE_LABEL = {
-  reminder:        'Reminder',
-  check_in_prompt: 'Check-in',
-  no_show_alert:   'No-show Alert',
-  waitlist_offer:  'Waitlist Offer',
-  reassignment:    'Reassignment',
+  reminder:               'Reminder',
+  check_in_prompt:        'Check-in',
+  no_show:                'No-show Alert',
+  no_show_alert:          'No-show Alert',
+  waitlist_offer:         'Waitlist Offer',
+  reassignment:           'Reassignment',
+  reassignment_success:   'Reassignment',
+  reservation_confirmed:  'Confirmation',
+  cancellation_confirmed: 'Cancellation',
+  offer_expired:          'Offer Expired',
 };
 
 /* ─────────────────────────────────────────────────────────────────
@@ -80,25 +85,34 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Managed separately so mark-as-read updates immediately without a reload
   const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const dashboard = await fetchDashboard(user.id);
-        setData(dashboard);
-        setNotifications(dashboard.unread_notifications);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
+  // Reservation cancel state
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+
+  // Waitlist cancel state
+  const [wlCancelTarget, setWlCancelTarget] = useState(null);  // waitlist entry object
+  const [wlCancelLoading, setWlCancelLoading] = useState(false);
+  const [wlCancelError, setWlCancelError] = useState(null);
+
+  async function loadDashboard() {
+    setLoading(true);
+    setError(null);
+    try {
+      const dashboard = await fetchDashboard(user.id);
+      setData(dashboard);
+      setNotifications(dashboard.unread_notifications);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-    load();
+  }
+
+  useEffect(() => {
+    loadDashboard();
   }, [user.id]);
 
   async function handleMarkRead(id) {
@@ -106,7 +120,7 @@ export default function DashboardPage() {
       await markNotificationRead(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch {
-      // Non-fatal; notification stays until next page load
+      // Non-fatal
     }
   }
 
@@ -115,9 +129,141 @@ export default function DashboardPage() {
     navigate('/login', { replace: true });
   }
 
+  // ── Cancel flow ─────────────────────────────────────────────────
+  function requestCancel(reservation) {
+    setCancelTarget(reservation);
+    setCancelError(null);
+  }
+
+  function dismissCancel() {
+    if (cancelLoading) return;
+    setCancelTarget(null);
+    setCancelError(null);
+  }
+
+  async function confirmCancel() {
+    if (!cancelTarget) return;
+    setCancelLoading(true);
+    setCancelError(null);
+    try {
+      await cancelReservation(cancelTarget.id, user.id);
+      setCancelTarget(null);
+      await loadDashboard();
+    } catch (e) {
+      setCancelError(e.message);
+    } finally {
+      setCancelLoading(false);
+    }
+  }
+
+  // ── Waitlist cancel flow ─────────────────────────────────────────
+  function requestWlCancel(entry) {
+    setWlCancelTarget(entry);
+    setWlCancelError(null);
+  }
+
+  function dismissWlCancel() {
+    if (wlCancelLoading) return;
+    setWlCancelTarget(null);
+    setWlCancelError(null);
+  }
+
+  async function confirmWlCancel() {
+    if (!wlCancelTarget) return;
+    setWlCancelLoading(true);
+    setWlCancelError(null);
+    try {
+      await cancelWaitlistEntry(wlCancelTarget.id, user.id);
+      setWlCancelTarget(null);
+      await loadDashboard();
+    } catch (e) {
+      setWlCancelError(e.message);
+    } finally {
+      setWlCancelLoading(false);
+    }
+  }
+
   return (
     <div className="ds-page">
       <Navbar />
+
+      {/* ── Cancel confirmation modal ── */}
+      {cancelTarget && (
+        <div className="ds-modal-overlay" role="dialog" aria-modal="true">
+          <div className="ds-modal">
+            <h3 className="ds-modal-title">Cancel Reservation?</h3>
+            <p className="ds-modal-body">
+              <strong>{cancelTarget.resource.name}</strong><br />
+              {fmtDate(cancelTarget.reservation_date)}&nbsp;·&nbsp;
+              {fmtTimeRange(cancelTarget.start_time, cancelTarget.end_time)}
+            </p>
+            <p className="ds-modal-note">
+              The slot will be released. If students are on the waitlist they will
+              be offered the spot immediately.
+            </p>
+            {cancelError && (
+              <p className="ds-modal-error">{cancelError}</p>
+            )}
+            <div className="ds-modal-actions">
+              <button
+                type="button"
+                className="ds-modal-btn ds-modal-btn--secondary"
+                onClick={dismissCancel}
+                disabled={cancelLoading}
+              >
+                Keep Reservation
+              </button>
+              <button
+                type="button"
+                className="ds-modal-btn ds-modal-btn--danger"
+                onClick={confirmCancel}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? 'Cancelling…' : 'Yes, Cancel It'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Waitlist cancel confirmation modal ── */}
+      {wlCancelTarget && (
+        <div className="ds-modal-overlay" role="dialog" aria-modal="true">
+          <div className="ds-modal">
+            <h3 className="ds-modal-title">Leave Waitlist?</h3>
+            <p className="ds-modal-body">
+              <strong>{wlCancelTarget.resource?.name}</strong><br />
+              {fmtDate(wlCancelTarget.reservation_date)}&nbsp;·&nbsp;
+              {fmtTimeRange(wlCancelTarget.start_time, wlCancelTarget.end_time)}
+            </p>
+            <p className="ds-modal-note">
+              You will lose your position in the queue and will need to rejoin if
+              you change your mind.
+            </p>
+            {wlCancelError && (
+              <p className="ds-modal-error">{wlCancelError}</p>
+            )}
+            <div className="ds-modal-actions">
+              <button
+                type="button"
+                className="ds-modal-btn ds-modal-btn--secondary"
+                onClick={dismissWlCancel}
+                disabled={wlCancelLoading}
+              >
+                Keep My Spot
+              </button>
+              <button
+                type="button"
+                className="ds-modal-btn ds-modal-btn--danger"
+                onClick={confirmWlCancel}
+                disabled={wlCancelLoading}
+              >
+                {wlCancelLoading ? 'Leaving…' : 'Yes, Leave Queue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="ds-main">
         <div className="ds-inner">
@@ -138,6 +284,30 @@ export default function DashboardPage() {
               Sign Out
             </button>
           </section>
+
+          {/* ── At-a-glance stats ── */}
+          {!loading && !error && data && (
+            <div className="ds-stats">
+              <StatCard
+                value={data.active_reservations.length}
+                label="Active Now"
+                tone="active"
+                icon={<PulseIcon />}
+              />
+              <StatCard
+                value={data.upcoming_reservations.length}
+                label="Upcoming"
+                tone="upcoming"
+                icon={<CalendarIcon />}
+              />
+              <StatCard
+                value={data.waitlist_entries.length}
+                label="On Waitlist"
+                tone="waitlist"
+                icon={<HourglassIcon />}
+              />
+            </div>
+          )}
 
           {/* ── Quick actions ── */}
           <div className="ds-quick-actions">
@@ -183,7 +353,7 @@ export default function DashboardPage() {
           {/* ── Data sections ── */}
           {data && (
             <>
-              {/* Active Now — only shown when student has a live reservation */}
+              {/* Active Now */}
               {data.active_reservations.length > 0 && (
                 <DashSection
                   title="Active Now"
@@ -197,7 +367,7 @@ export default function DashboardPage() {
                 </DashSection>
               )}
 
-              {/* Upcoming reservations */}
+              {/* Upcoming Reservations */}
               <DashSection
                 title="Upcoming Reservations"
                 count={data.upcoming_reservations.length}
@@ -211,10 +381,28 @@ export default function DashboardPage() {
                   </EmptyState>
                 ) : (
                   data.upcoming_reservations.map(r => (
-                    <ReservationRow key={r.id} reservation={r} />
+                    <ReservationRow
+                      key={r.id}
+                      reservation={r}
+                      onCancel={() => requestCancel(r)}
+                    />
                   ))
                 )}
               </DashSection>
+
+              {/* Missed / Pending No-show */}
+              {data.pending_no_show_reservations?.length > 0 && (
+                <DashSection
+                  title="Missed / No-show"
+                  count={data.pending_no_show_reservations.length}
+                  accent="warn"
+                  icon={<WarnIcon />}
+                >
+                  {data.pending_no_show_reservations.map(r => (
+                    <ReservationRow key={r.id} reservation={r} variant="missed" />
+                  ))}
+                </DashSection>
+              )}
 
               {/* Waitlist */}
               <DashSection
@@ -226,7 +414,7 @@ export default function DashboardPage() {
                   <EmptyState>Not on any waitlists.</EmptyState>
                 ) : (
                   data.waitlist_entries.map(w => (
-                    <WaitlistRow key={w.id} entry={w} />
+                    <WaitlistRow key={w.id} entry={w} onCancel={() => requestWlCancel(w)} />
                   ))
                 )}
               </DashSection>
@@ -248,7 +436,7 @@ export default function DashboardPage() {
                 )}
               </DashSection>
 
-              {/* Recent history */}
+              {/* Recent History */}
               {data.recent_history.length > 0 && (
                 <DashSection
                   title="Recent History"
@@ -302,10 +490,11 @@ function EmptyState({ children }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Reservation row  (used for upcoming, active, and history)
+   Reservation row
 ───────────────────────────────────────────────────────────────── */
-function ReservationRow({ reservation: r, variant }) {
+function ReservationRow({ reservation: r, variant, onCancel }) {
   const meta = RES_STATUS[r.status] ?? { label: r.status, cls: 'ds-status--neutral' };
+  const canCancel = onCancel && r.status === 'reserved';
 
   return (
     <div className={`ds-row${variant ? ` ds-row--${variant}` : ''}`}>
@@ -319,7 +508,19 @@ function ReservationRow({ reservation: r, variant }) {
           {fmtTimeRange(r.start_time, r.end_time)}
         </span>
       </div>
-      <span className={`ds-status ${meta.cls}`}>{meta.label}</span>
+      <div className="ds-row-right">
+        <span className={`ds-status ${meta.cls}`}>{meta.label}</span>
+        {canCancel && (
+          <button
+            type="button"
+            className="ds-cancel-btn"
+            onClick={onCancel}
+            title="Cancel this reservation"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -327,8 +528,9 @@ function ReservationRow({ reservation: r, variant }) {
 /* ─────────────────────────────────────────────────────────────────
    Waitlist row
 ───────────────────────────────────────────────────────────────── */
-function WaitlistRow({ entry: w }) {
+function WaitlistRow({ entry: w, onCancel }) {
   const meta = WL_STATUS[w.status] ?? { label: w.status, cls: 'ds-status--neutral' };
+  const canCancel = onCancel && (w.status === 'waiting' || w.status === 'offered');
 
   return (
     <div className={`ds-row${w.status === 'offered' ? ' ds-row--offered' : ''}`}>
@@ -350,7 +552,19 @@ function WaitlistRow({ entry: w }) {
           </span>
         )}
       </div>
-      <span className={`ds-status ${meta.cls}`}>{meta.label}</span>
+      <div className="ds-row-right">
+        <span className={`ds-status ${meta.cls}`}>{meta.label}</span>
+        {canCancel && (
+          <button
+            type="button"
+            className="ds-cancel-btn"
+            onClick={onCancel}
+            title="Leave this waitlist"
+          >
+            Leave
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -364,8 +578,6 @@ function NotificationRow({ notification: n, onMarkRead }) {
   async function handleClick() {
     setMarking(true);
     await onMarkRead(n.id);
-    // If onMarkRead removes the item from the list, this component unmounts,
-    // so we don't reset marking — that's intentional.
   }
 
   const typeLabel = NOTIF_TYPE_LABEL[n.notification_type] ?? n.notification_type;
@@ -441,6 +653,17 @@ function ActiveIcon() {
   );
 }
 
+function WarnIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 function QueueIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -481,6 +704,63 @@ function CheckInIcon() {
       strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
       <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
       <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   At-a-glance stat card with count-up animation
+───────────────────────────────────────────────────────────────── */
+function StatCard({ value, label, tone, icon }) {
+  const display = useCountUp(value, 700);
+  return (
+    <div className={`ds-stat ds-stat--${tone}`}>
+      <span className="ds-stat-icon" aria-hidden="true">{icon}</span>
+      <span className="ds-stat-value">{display}</span>
+      <span className="ds-stat-label">{label}</span>
+    </div>
+  );
+}
+
+function useCountUp(target, durationMs = 700) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (typeof target !== 'number' || target <= 0) {
+      setN(target ?? 0);
+      return;
+    }
+    const start = performance.now();
+    let raf;
+    function tick(now) {
+      const t = Math.min(1, (now - start) / durationMs);
+      // Ease-out cubic for a premium, decelerating count
+      const eased = 1 - Math.pow(1 - t, 3);
+      setN(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return n;
+}
+
+function PulseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+}
+
+function HourglassIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+      <path d="M6 2h12" />
+      <path d="M6 22h12" />
+      <path d="M6 2c0 4 6 6 6 10s-6 6-6 10" />
+      <path d="M18 2c0 4-6 6-6 10s6 6 6 10" />
     </svg>
   );
 }

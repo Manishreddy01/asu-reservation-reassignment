@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { fetchDashboard } from '../api/dashboard';
+import { submitCheckIn } from '../api/checkIn';
 import {
   getWindowState,
   windowOpenAt,
@@ -102,9 +103,11 @@ export default function CheckInPage() {
 
   const today = todayString();
 
-  // Split into today's reservations (actionable) and future (informational)
+  // Actionable = today or earlier (backend only returns live reservations here,
+  // so a past date here means a test slot whose window wraps past midnight).
+  // Future = strictly a later calendar date.
   const todayReservations = useMemo(
-    () => sortedReservations(reservations.filter(r => r.reservation_date === today)),
+    () => sortedReservations(reservations.filter(r => r.reservation_date <= today)),
     [reservations, today],
   );
   const futureReservations = useMemo(
@@ -118,24 +121,43 @@ export default function CheckInPage() {
 
   function handleCheckIn(reservationId) {
     if (!navigator.geolocation) {
-      setCiState(reservationId, { phase: 'no-support', coords: null });
+      setCiState(reservationId, { phase: 'no-support' });
       return;
     }
-    setCiState(reservationId, { phase: 'locating', coords: null });
+    setCiState(reservationId, { phase: 'locating' });
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCiState(reservationId, {
-          phase: 'located',
-          coords: {
-            lat: pos.coords.latitude.toFixed(5),
-            lng: pos.coords.longitude.toFixed(5),
-            accuracy: Math.round(pos.coords.accuracy),
-          },
-        });
+      async (pos) => {
+        const coords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy),
+        };
+        setCiState(reservationId, { phase: 'submitting', coords });
+        try {
+          const res = await submitCheckIn({
+            user_id: user.id,
+            reservation_id: reservationId,
+            submitted_latitude: coords.lat,
+            submitted_longitude: coords.lng,
+          });
+          setCiState(reservationId, {
+            phase: 'result',
+            result: res.result,
+            message: res.message,
+            distance_meters: res.distance_meters,
+            geofence_radius_meters: res.geofence_radius_meters,
+          });
+          if (res.result === 'success') {
+            const data = await fetchDashboard(user.id);
+            setReservations([...data.active_reservations, ...data.upcoming_reservations]);
+          }
+        } catch (e) {
+          setCiState(reservationId, { phase: 'api-error', message: e.message });
+        }
       },
       (err) => {
         const phase = err.code === err.PERMISSION_DENIED ? 'denied' : 'geo-error';
-        setCiState(reservationId, { phase, coords: null });
+        setCiState(reservationId, { phase });
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -385,31 +407,84 @@ function CheckInFlow({ reservationId, ciState, onCheckIn, onRetry }) {
     );
   }
 
-  if (phase === 'located') {
+  if (phase === 'submitting') {
     const { lat, lng, accuracy } = ciState.coords;
     return (
-      <div className="ci-flow-status ci-flow-status--located">
+      <div className="ci-flow-status ci-flow-status--submitting">
         <div className="ci-flow-row">
-          <CheckCircleIcon />
-          <span className="ci-flow-status-msg ci-flow-status-msg--success">
-            Location access granted
-          </span>
+          <span className="ci-spinner" aria-label="Verifying" />
+          <span className="ci-flow-status-msg">Verifying location&hellip;</span>
         </div>
         <p className="ci-flow-coords">
-          {lat}, {lng} &nbsp;·&nbsp; ±{accuracy} m
+          {lat.toFixed(5)}, {lng.toFixed(5)} &nbsp;·&nbsp; ±{accuracy} m
         </p>
-        <div className="ci-pending-notice">
-          <InfoIcon />
-          <div>
-            <p className="ci-pending-title">Ready for geofence verification</p>
-            <p className="ci-pending-body">
-              Backend check-in endpoint not yet integrated. This location will be
-              submitted once the endpoint is available.
-            </p>
+      </div>
+    );
+  }
+
+  if (phase === 'result') {
+    const { result, message, distance_meters, geofence_radius_meters } = ciState;
+    if (result === 'success') {
+      return (
+        <div className="ci-flow-status ci-flow-status--result-success">
+          <div className="ci-flow-row">
+            <CheckCircleIcon />
+            <span className="ci-flow-status-msg ci-flow-status-msg--success">
+              Checked in successfully!
+            </span>
           </div>
+          <p className="ci-result-detail">{message}</p>
         </div>
+      );
+    }
+    if (result === 'outside_geofence') {
+      return (
+        <div className="ci-flow-status ci-flow-status--error">
+          <div className="ci-flow-row">
+            <WarningIcon />
+            <span className="ci-flow-status-msg ci-flow-status-msg--error">
+              Too far from the building
+            </span>
+          </div>
+          <p className="ci-flow-error-body">
+            You are <strong>{distance_meters?.toFixed(0)} m</strong> away
+            (allowed: {geofence_radius_meters?.toFixed(0)} m). Move closer and try again.
+          </p>
+          <button className="ci-retry-btn" onClick={() => onRetry(reservationId)}>
+            Try again
+          </button>
+        </div>
+      );
+    }
+    // outside_time_window or other
+    return (
+      <div className="ci-flow-status ci-flow-status--error">
+        <div className="ci-flow-row">
+          <WarningIcon />
+          <span className="ci-flow-status-msg ci-flow-status-msg--error">
+            Check-in window closed
+          </span>
+        </div>
+        <p className="ci-flow-error-body">{message}</p>
         <button className="ci-retry-btn" onClick={() => onRetry(reservationId)}>
-          Reset
+          Dismiss
+        </button>
+      </div>
+    );
+  }
+
+  if (phase === 'api-error') {
+    return (
+      <div className="ci-flow-status ci-flow-status--error">
+        <div className="ci-flow-row">
+          <WarningIcon />
+          <span className="ci-flow-status-msg ci-flow-status-msg--error">
+            Check-in failed
+          </span>
+        </div>
+        <p className="ci-flow-error-body">{ciState.message}</p>
+        <button className="ci-retry-btn" onClick={() => onRetry(reservationId)}>
+          Try again
         </button>
       </div>
     );

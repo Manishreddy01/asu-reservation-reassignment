@@ -14,7 +14,7 @@ Status lifecycle:
 
 import enum
 from datetime import datetime, timezone
-from sqlalchemy import Date, Time, DateTime, ForeignKey, Enum as SAEnum, UniqueConstraint
+from sqlalchemy import Date, Time, DateTime, ForeignKey, Enum as SAEnum, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -56,6 +56,9 @@ class WaitlistEntry(Base):
     offer_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Set when the student successfully claims the reservation
     claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Email captured at join-time for the join-confirmation + offer notifications.
+    notification_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

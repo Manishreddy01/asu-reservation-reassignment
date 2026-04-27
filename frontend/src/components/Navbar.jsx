@@ -1,12 +1,24 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 export default function Navbar() {
   const { user } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Apply a deeper-shadow style once the page is scrolled past the top.
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 4);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
-    <header className="navbar">
+    <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
       <div className="navbar-inner">
 
         {/* Logo */}
@@ -20,6 +32,9 @@ export default function Navbar() {
           <Link to="/" className="navbar-link">Home</Link>
           {user && (
             <Link to="/app/notifications" className="navbar-link">Notifications</Link>
+          )}
+          {user?.role === 'admin' && (
+            <Link to="/app/admin" className="navbar-link">Demo Controls</Link>
           )}
           {user ? (
             <Link to="/app" className="navbar-cta">

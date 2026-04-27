@@ -6,6 +6,10 @@ __pycache__/
 
 # Virtual environment
 backend/.venv/
+venv/
+
+# Claude Code local state
+.claude/
 
 # SQLite database (generated — do not commit)
 backend/*.db

@@ -1,9 +1,8 @@
 """
-Reservation creation service.
+Reservation creation and cancellation service.
 
-All slot-conflict and overlap validation lives here so the route handler
-stays thin.  Future blocks (no-show release, reassignment) will add more
-functions to this module.
+All slot-conflict/overlap validation and cancellation logic lives here
+so route handlers stay thin.
 """
 
 import datetime as dt
@@ -15,8 +14,9 @@ from sqlalchemy.orm import Session
 from app.models.reservation import Reservation, ReservationStatus
 from app.models.resource import Resource
 from app.models.user import User
+from app.models.waitlist import WaitlistEntry, WaitlistStatus
 from app.schemas.reservation import ReservationCreate
-from app.services.messaging_service import send_event
+from app.services.messaging_service import send_event, send_waitlist_event
 
 AZ = ZoneInfo("America/Phoenix")
 
@@ -26,6 +26,8 @@ _OCCUPYING = [
     ReservationStatus.active,
     ReservationStatus.reassigned,
 ]
+
+_OFFER_WINDOW_MINUTES = 5
 
 
 def create_reservation(db: Session, data: ReservationCreate) -> Reservation:
@@ -60,7 +62,6 @@ def create_reservation(db: Session, data: ReservationCreate) -> Reservation:
         )
 
     # ── 3. Resource slot conflict ───────────────────────────────────────────
-    # For fixed 1-hour slots: same resource + same date + same start_time = double-book.
     slot_taken = (
         db.query(Reservation)
         .filter(
@@ -81,9 +82,6 @@ def create_reservation(db: Session, data: ReservationCreate) -> Reservation:
         )
 
     # ── 4. User overlap conflict ────────────────────────────────────────────
-    # A student cannot hold two active reservations in the same time window,
-    # even across different resources.
-    # With fixed 1-hour slots, same date + same start_time always overlaps.
     user_conflict = (
         db.query(Reservation)
         .filter(
@@ -104,11 +102,15 @@ def create_reservation(db: Session, data: ReservationCreate) -> Reservation:
         )
 
     # ── Compute derived fields ──────────────────────────────────────────────
+    # Test slots (non-hour-aligned) use a 15-minute duration;
+    # production slots use the standard 1-hour duration.
+    is_test_slot = data.start_time.minute != 0 or data.start_time.second != 0
+    slot_duration = dt.timedelta(minutes=15) if is_test_slot else dt.timedelta(hours=1)
+
     end_time = (
-        dt.datetime.combine(data.reservation_date, data.start_time) + dt.timedelta(hours=1)
+        dt.datetime.combine(data.reservation_date, data.start_time) + slot_duration
     ).time()
 
-    # check_in_deadline = start_time + 15 minutes, timezone-aware (Arizona)
     start_dt = dt.datetime.combine(data.reservation_date, data.start_time, tzinfo=AZ)
     check_in_deadline = start_dt + dt.timedelta(minutes=15)
 
@@ -122,12 +124,103 @@ def create_reservation(db: Session, data: ReservationCreate) -> Reservation:
         status=ReservationStatus.reserved,
         check_in_deadline=check_in_deadline,
         checked_in_at=None,
+        notification_email=data.notification_email,
     )
     db.add(reservation)
+    db.flush()  # assign reservation.id before send_event uses it
 
-    # ── Confirmation notification + email ───────────────────────────────────
-    # Committed in the same transaction so the event is atomic with the booking.
     send_event(db, "reservation_confirmed", user, resource, reservation)
+
+    db.commit()
+    db.refresh(reservation)
+    return reservation
+
+
+def cancel_reservation(db: Session, reservation_id: int, user_id: int) -> Reservation:
+    """
+    Cancel a future reservation belonging to the requesting user.
+
+    Rules:
+    - Reservation must exist and belong to user_id.
+    - Status must be 'reserved' (only pre-check-in reservations are cancellable).
+    - Start time must not have passed yet.
+
+    On success:
+    - Marks the reservation as 'cancelled'.
+    - Sends a cancellation notification + email to the student.
+    - If waitlisted students exist for this slot, issues an offer to the
+      first waiting student (FCFS) so the freed slot can be claimed.
+    """
+    reservation = db.query(Reservation).filter(Reservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Reservation {reservation_id} not found.",
+        )
+
+    if reservation.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This reservation does not belong to you.",
+        )
+
+    if reservation.status != ReservationStatus.reserved:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Cannot cancel a reservation with status '{reservation.status.value}'. "
+                "Only upcoming (reserved) reservations can be cancelled."
+            ),
+        )
+
+    # Ensure start time hasn't passed
+    start_dt = dt.datetime.combine(
+        reservation.reservation_date, reservation.start_time, tzinfo=AZ
+    )
+    now_az = dt.datetime.now(tz=AZ)
+    if start_dt <= now_az:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot cancel a reservation that has already started or passed.",
+        )
+
+    resource = db.query(Resource).filter(Resource.id == reservation.resource_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
+
+    # Mark cancelled
+    reservation.status = ReservationStatus.cancelled
+    db.add(reservation)
+
+    # Cancellation notification to the student
+    send_event(db, "cancellation_confirmed", user, resource, reservation)
+
+    # ── Offer freed slot to first waiting student (FCFS) ───────────────────
+    waiting_entry = (
+        db.query(WaitlistEntry)
+        .filter(
+            WaitlistEntry.resource_id == reservation.resource_id,
+            WaitlistEntry.reservation_date == reservation.reservation_date,
+            WaitlistEntry.start_time == reservation.start_time,
+            WaitlistEntry.status == WaitlistStatus.waiting,
+        )
+        .order_by(WaitlistEntry.created_at, WaitlistEntry.id)
+        .first()
+    )
+
+    if waiting_entry:
+        waiting_user = db.query(User).filter(User.id == waiting_entry.user_id).first()
+        if waiting_user:
+            now_utc = dt.datetime.now(tz=dt.timezone.utc)
+            offer_expires = now_utc + dt.timedelta(minutes=_OFFER_WINDOW_MINUTES)
+            waiting_entry.status = WaitlistStatus.offered
+            waiting_entry.offer_sent_at = now_utc
+            waiting_entry.offer_expires_at = offer_expires
+            db.add(waiting_entry)
+
+            send_waitlist_event(
+                db, "waitlist_offer", waiting_user, resource, waiting_entry,
+                offer_window_minutes=_OFFER_WINDOW_MINUTES,
+            )
 
     db.commit()
     db.refresh(reservation)

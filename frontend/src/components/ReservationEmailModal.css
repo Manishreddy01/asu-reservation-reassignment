@@ -1,0 +1,225 @@
+/* Reservation email modal — captured at booking time */
+
+@keyframes rem-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes rem-modal-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.rem-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 20, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+  animation: rem-backdrop-in 0.15s ease-out;
+}
+
+.rem-modal {
+  background: var(--surface, #fff);
+  border-radius: var(--radius, 10px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  padding: 22px 22px 18px;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: rem-modal-in 0.18s ease-out;
+}
+
+.rem-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.rem-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.rem-when {
+  white-space: nowrap;
+}
+
+.rem-hint {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin: 4px 0 6px;
+  line-height: 1.45;
+}
+
+.rem-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 4px 0 0;
+}
+
+.rem-input {
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius, 10px);
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rem-input:focus {
+  outline: none;
+  border-color: var(--asu-maroon);
+  box-shadow: 0 0 0 3px rgba(140, 29, 64, 0.15);
+}
+
+.rem-input--invalid {
+  border-color: #b3261e;
+}
+
+.rem-error {
+  font-size: 0.8rem;
+  color: #b3261e;
+  margin: 0;
+}
+
+.rem-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rem-btn {
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: var(--radius, 10px);
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.rem-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rem-btn--ghost:hover {
+  background: var(--bg);
+}
+
+.rem-btn--primary {
+  background: var(--asu-maroon);
+  border-color: var(--asu-maroon);
+  color: #fff;
+}
+
+.rem-btn--primary:hover:not(:disabled) {
+  background: var(--asu-maroon-dark);
+  border-color: var(--asu-maroon-dark);
+}
+
+/* ── Success state (checkmark + confetti) ───────────────────────── */
+.rem-modal--success {
+  align-items: center;
+  text-align: center;
+  padding: 28px 24px 26px;
+}
+
+.rem-success-burst {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin: 4px auto 8px;
+}
+
+.rem-check-svg {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.rem-check-circle {
+  fill: none;
+  stroke: var(--success, #2e7d32);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  animation: rem-circle-draw 0.5s ease-out 0.05s forwards;
+  transform-origin: center;
+}
+
+.rem-check-path {
+  fill: none;
+  stroke: var(--success, #2e7d32);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: rem-check-draw 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
+}
+
+@keyframes rem-circle-draw { to { stroke-dashoffset: 0; } }
+@keyframes rem-check-draw  { to { stroke-dashoffset: 0; } }
+
+.rem-confetti {
+  position: absolute;
+  top: 50%;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  animation: rem-confetti-fly 1s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes rem-confetti-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.6);
+  }
+  15% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--end-x), var(--end-y)) rotate(var(--spin)) scale(1);
+  }
+}
+
+.rem-success-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 6px 0 4px;
+}
+
+.rem-success-body {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 320px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rem-check-circle,
+  .rem-check-path,
+  .rem-confetti { animation: none; }
+  .rem-check-circle { stroke-dashoffset: 0; }
+  .rem-check-path   { stroke-dashoffset: 0; }
+}

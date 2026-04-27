@@ -1,22 +1,32 @@
 import datetime as dt
-from pydantic import BaseModel, ConfigDict, field_validator
+import os
+
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from app.models.waitlist import WaitlistStatus
 from app.schemas.resource import ResourceSummary
+
+_DEMO_MODE: bool = os.getenv("DEMO_MODE", "").lower() in ("1", "true", "yes")
 
 
 class WaitlistCreate(BaseModel):
     """
     Request body for joining a waitlist.
-    start_time must be on the hour (matches reservation slot rules).
+    start_time must be on the hour (matches reservation slot rules) — unless
+    DEMO_MODE is enabled, which allows test-slot times for Join-Waitlist testing.
+    notification_email captures where the join confirmation + future offer
+    emails should be sent.
     """
     user_id: int
     resource_id: int
     reservation_date: dt.date
     start_time: dt.time
+    notification_email: EmailStr
 
     @field_validator("start_time")
     @classmethod
     def must_be_on_the_hour(cls, v: dt.time) -> dt.time:
+        if _DEMO_MODE:
+            return v
         if v.minute != 0 or v.second != 0:
             raise ValueError("start_time must be on the hour (e.g. 10:00).")
         return v
@@ -44,4 +54,5 @@ class WaitlistResponse(BaseModel):
     offer_sent_at: dt.datetime | None
     offer_expires_at: dt.datetime | None
     claimed_at: dt.datetime | None
+    notification_email: str | None
     created_at: dt.datetime

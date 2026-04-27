@@ -7,9 +7,11 @@ that main.py mounts under /api/v1.
 from fastapi import APIRouter
 
 from app.api import (
+    admin_demo,
     auth,
     buildings,
     check_in,
+    config,
     dashboard,
     no_shows,
     notifications,
@@ -31,3 +33,5 @@ api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(check_in.router)
 api_router.include_router(no_shows.router)
+api_router.include_router(admin_demo.router)
+api_router.include_router(config.router)

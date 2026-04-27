@@ -1,0 +1,360 @@
+/* ============================================================
+   AdminDemoPage — Block 14
+   Class namespace: adp-*
+   ============================================================ */
+
+.adp-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.adp-main {
+  padding: 32px 16px 72px;
+}
+
+.adp-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Page header ── */
+.adp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.adp-page-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.adp-page-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.adp-badge-demo {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ── Banners ── */
+.adp-banner {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.adp-banner--warn {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.adp-banner code {
+  background: rgba(0,0,0,0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* ── Section headers ── */
+.adp-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 8px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8rem;
+}
+
+.adp-section-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* ── Action cards ── */
+.adp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adp-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.adp-card-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.adp-card-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Buttons ── */
+.adp-btn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.adp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.adp-btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.adp-btn--primary:not(:disabled):hover {
+  opacity: 0.85;
+}
+
+.adp-btn--ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+.adp-btn--ghost:not(:disabled):hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Inputs ── */
+.adp-input {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.adp-input:focus {
+  border-color: var(--accent);
+}
+
+.adp-offset-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.adp-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.adp-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Claim grid ── */
+.adp-claim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .adp-claim-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.adp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.adp-field .adp-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.adp-coords-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
+/* ── JSON result panel ── */
+.adp-json {
+  background: #0f172a;
+  color: #94a3b8;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.adp-json--error {
+  background: #1c0a0a;
+  color: #f87171;
+}
+
+/* ── Inspect section ── */
+.adp-inspect {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.adp-tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.adp-tab {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.adp-tab:hover {
+  color: var(--text-primary);
+}
+
+.adp-tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.adp-table-wrap {
+  overflow-x: auto;
+  padding: 0 0 4px;
+}
+
+.adp-table-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px 0;
+  margin: 0;
+}
+
+.adp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.adp-table th {
+  text-align: left;
+  padding: 10px 14px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.adp-table td {
+  padding: 9px 14px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.adp-table tr:last-child td {
+  border-bottom: none;
+}
+
+.adp-table tr:hover td {
+  background: var(--bg);
+}
+
+/* ── Empty states ── */
+.adp-empty {
+  padding: 20px 16px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.adp-empty-state {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
